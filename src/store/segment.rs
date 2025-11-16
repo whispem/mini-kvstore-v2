@@ -3,8 +3,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 
 pub struct Segment {
-    pub id: usize,
-    pub path: PathBuf,
+
     pub file: File,
     pub len: u64,
 }
@@ -19,7 +18,7 @@ impl Segment {
             .append(true)
             .open(&path)?;
         let len = file.seek(SeekFrom::End(0))?;
-        Ok(Segment { id, path, file, len })
+        Ok(Segment { /*id, path,*/ file, len })
     }
 
     pub fn append(&mut self, key: &[u8], value: &[u8]) -> std::io::Result<u64> {
