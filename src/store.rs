@@ -1,7 +1,7 @@
 use crc32fast::Hasher;
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read, Seek, SeekFrom, Write};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 
 const SEGMENTS_DIR: &str = "segments";
