@@ -3,6 +3,8 @@ pub mod engine;
 pub mod index;
 pub mod segment;
 
+pub use engine::KvStore;
+
 use crc32fast::Hasher;
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
