@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-/// Index maps key -> (segment_id, offset, value_len)
 pub type IndexMap = HashMap<String, (usize, u64, u64)>;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Index {
     pub map: IndexMap,
 }
