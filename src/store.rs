@@ -10,7 +10,6 @@ const SEGMENT_EXT: &str = "log";
 
 #[derive(Debug)]
 pub struct KvStore {
-    data_dir: PathBuf,
     segments_dir: PathBuf,
     /// in-memory index: key -> Option(value). None means deleted (tombstone).
     index: HashMap<String, Option<Vec<u8>>>,
@@ -21,8 +20,7 @@ pub struct KvStore {
 impl KvStore {
     /// open (or create) store at path
     pub fn open<P: AsRef<Path>>(root: P) -> io::Result<Self> {
-        let data_dir = root.as_ref().to_path_buf();
-        let segments_dir = data_dir.join(SEGMENTS_DIR);
+        let segments_dir = root.as_ref().join(SEGMENTS_DIR);
         fs::create_dir_all(&segments_dir)?;
 
         // find existing segments and rebuild index
@@ -56,7 +54,6 @@ impl KvStore {
             .unwrap_or(0);
 
         Ok(Self {
-            data_dir,
             segments_dir,
             index,
             next_segment_id,
