@@ -1,3 +1,8 @@
+pub mod compaction;
+pub mod engine;
+pub mod index;
+pub mod segment;
+
 use crc32fast::Hasher;
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
@@ -18,18 +23,15 @@ pub struct KvStore {
 }
 
 impl KvStore {
-    /// open (or create) store at path
     pub fn open<P: AsRef<Path>>(root: P) -> io::Result<Self> {
         let segments_dir = root.as_ref().join(SEGMENTS_DIR);
         fs::create_dir_all(&segments_dir)?;
 
-        // find existing segments and rebuild index
         let mut segment_files: Vec<PathBuf> = fs::read_dir(&segments_dir)?
             .filter_map(|e| e.ok().map(|d| d.path()))
             .filter(|p| p.is_file())
             .collect();
 
-        // sort by name (segment_0.log, segment_1.log, ...)
         segment_files.sort();
 
         let mut index: HashMap<String, Option<Vec<u8>>> = HashMap::new();
@@ -37,7 +39,6 @@ impl KvStore {
             KvStore::replay_segment(seg, &mut index)?;
         }
 
-        // next id = highest existing + 1
         let next_segment_id = segment_files
             .iter()
             .filter_map(|p| {
@@ -66,7 +67,6 @@ impl KvStore {
         f.read_to_end(&mut buf)?;
         let mut cursor = 0usize;
         while cursor + 13 <= buf.len() {
-            // header: key_len(u32) value_len(u32) tombstone(u8)
             let key_len = u32::from_le_bytes(buf[cursor..cursor + 4].try_into().unwrap()) as usize;
             cursor += 4;
             let value_len = u32::from_le_bytes(buf[cursor..cursor + 4].try_into().unwrap()) as usize;
@@ -74,7 +74,6 @@ impl KvStore {
             let tomb = buf[cursor];
             cursor += 1;
             if cursor + key_len + value_len + 4 > buf.len() {
-                // truncated or corrupted -> stop
                 break;
             }
             let key = String::from_utf8_lossy(&buf[cursor..cursor + key_len]).to_string();
@@ -84,14 +83,12 @@ impl KvStore {
             let crc_stored = u32::from_le_bytes(buf[cursor..cursor + 4].try_into().unwrap());
             cursor += 4;
 
-            // verify crc
             let mut hasher = Hasher::new();
             hasher.update(&key.as_bytes());
             hasher.update(&[tomb]);
             hasher.update(&value);
             let crc = hasher.finalize();
             if crc != crc_stored {
-                // corrupted record — skip / stop replay
                 break;
             }
 
@@ -111,7 +108,6 @@ impl KvStore {
 
     fn append_record(&mut self, key: &str, value: Option<&[u8]>) -> io::Result<()> {
         let path = self.current_segment_path();
-        // ensure file exists
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)
@@ -123,7 +119,6 @@ impl KvStore {
         let val_len = val_bytes.len() as u32;
         let tomb = if value.is_none() { 1u8 } else { 0u8 };
 
-        // checksum over key + tomb + value
         let mut hasher = Hasher::new();
         hasher.update(&key_bytes);
         hasher.update(&[tomb]);
@@ -140,14 +135,11 @@ impl KvStore {
         Ok(())
     }
 
-    /// set key -> value
     pub fn set(&mut self, key: String, value: Vec<u8>) -> io::Result<()> {
         self.append_record(&key, Some(&value))?;
         self.index.insert(key, Some(value));
-        // rotate segment if gets too large? simple heuristic
         let path = self.current_segment_path();
         if let Ok(metadata) = fs::metadata(&path) {
-            // rotate at 2 MB for this simple demo
             if metadata.len() > 2 * 1024 * 1024 {
                 self.next_segment_id += 1;
             }
@@ -155,19 +147,16 @@ impl KvStore {
         Ok(())
     }
 
-    /// get key
     pub fn get(&self, key: &str) -> Option<Vec<u8>> {
         self.index.get(key).and_then(|opt| opt.clone())
     }
 
-    /// delete key (tombstone)
     pub fn delete(&mut self, key: &str) -> io::Result<bool> {
         if !self.index.contains_key(key) || self.index.get(key).and_then(|v| v.as_ref()).is_none() {
             return Ok(false);
         }
         self.append_record(key, None)?;
         self.index.insert(key.to_string(), None);
-        // rotate if large (same heuristic)
         let path = self.current_segment_path();
         if let Ok(metadata) = fs::metadata(&path) {
             if metadata.len() > 2 * 1024 * 1024 {
@@ -177,7 +166,6 @@ impl KvStore {
         Ok(true)
     }
 
-    /// list keys (including deleted ones? we filter deleted)
     pub fn keys(&self) -> Vec<String> {
         let mut v: Vec<String> = self
             .index
@@ -188,7 +176,6 @@ impl KvStore {
         v
     }
 
-    /// quick stats
     pub fn stats(&self) -> (usize, usize) {
         let segments = fs::read_dir(&self.segments_dir)
             .map(|rd| rd.filter_map(|e| e.ok()).count())
@@ -197,9 +184,7 @@ impl KvStore {
         (segments, keys)
     }
 
-    /// manual compaction: write current live keys into a new segment, then remove old segments
     pub fn compact(&mut self) -> io::Result<()> {
-        // gather live keys
         let mut live: Vec<(String, Vec<u8>)> = self
             .index
             .iter()
@@ -207,7 +192,6 @@ impl KvStore {
             .collect();
         live.sort_by(|a, b| a.0.cmp(&b.0));
 
-        // create new segment file with next_segment_id
         let new_seg_id = self.next_segment_id;
         let new_path = self.segments_dir.join(format!("{}{}.{}", SEGMENT_PREFIX, new_seg_id, SEGMENT_EXT));
         {
@@ -237,7 +221,6 @@ impl KvStore {
             file.flush()?;
         }
 
-        // remove all old segments (except the one we just wrote) and set next_segment_id = new_seg_id + 1
         for entry in fs::read_dir(&self.segments_dir)? {
             let p = entry?.path();
             if p == new_path {
@@ -249,7 +232,6 @@ impl KvStore {
         }
         self.next_segment_id = new_seg_id + 1;
 
-        // rebuild index from the new single segment
         self.index.clear();
         KvStore::replay_segment(&new_path, &mut self.index)?;
         Ok(())
