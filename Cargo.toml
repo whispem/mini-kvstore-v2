@@ -1,0 +1,10 @@
+[package]
+name = "mini-kvstore-v2"
+version = "0.1.0"
+edition = "2021"
+authors = ["whispem"]
+description = "mini-kvstore-v2 — segmented append-only KV store (learning project)"
+license = "MIT"
+
+[dependencies]
+crc32fast = "1.3"
