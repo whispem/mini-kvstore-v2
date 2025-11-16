@@ -16,7 +16,6 @@ fn print_help() {
 }
 
 fn main() -> anyhow::Result<()> {
-    // initialize store in ./data
     let mut kv = KvStore::open("data")?;
     println!("mini-kvstore-v2 — tiny segmented KV store (Rust) — running");
     print_help();
@@ -54,7 +53,7 @@ fn main() -> anyhow::Result<()> {
                     None => { println!("usage: get <key>"); continue; }
                 };
                 match kv.get(key) {
-                    Some(v) => println!("{}", String::from_utf8_lossy(&v)),
+                    Some(ref v) => println!("{}", String::from_utf8_lossy(&v[..])),
                     None => println!("Key not found"),
                 }
             }
