@@ -1,0 +1,6 @@
+# Example configuration for mini-kvstore-v2
+
+data_dir = "data"
+segment_max_bytes = 1048576
+fsync_policy = "always"   # options: "always", "batch"
+compaction_threshold = 0.7  # Ratio: compact when >70% tombstones
