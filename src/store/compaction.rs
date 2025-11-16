@@ -3,6 +3,7 @@ use crate::store::segment::Segment;
 use std::fs;
 use std::io::Result;
 
+/// Naive compaction: write latest values for all keys into a new segment.
 pub fn compact_segments(store: &mut KvStore) -> Result<()> {
     let next_id = store
         .segments
