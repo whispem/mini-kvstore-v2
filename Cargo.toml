@@ -7,4 +7,5 @@ description = "mini-kvstore-v2 — segmented append-only KV store (learning proj
 license = "MIT"
 
 [dependencies]
+anyhow = "1.0"
 crc32fast = "1.3"
