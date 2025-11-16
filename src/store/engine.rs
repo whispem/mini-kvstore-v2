@@ -6,18 +6,16 @@ use std::io::{Error, ErrorKind, Result};
 use std::path::{Path, PathBuf};
 
 pub struct KvStore {
-    dir: PathBuf,
-    segments: HashMap<usize, Segment>,
-    index: Index,
-    active_id: usize,
+    pub dir: PathBuf,
+    pub segments: HashMap<usize, Segment>,
+    pub index: Index,
+    pub active_id: usize,
 }
 
 impl KvStore {
-    /// Open or create a KvStore rooted at `dir`.
     pub fn open<P: AsRef<Path>>(dir: P) -> Result<Self> {
         let dir = dir.as_ref().to_path_buf();
         fs::create_dir_all(&dir)?;
-        // find existing segments
         let mut ids: Vec<usize> = fs::read_dir(&dir)?
             .filter_map(|res| res.ok())
             .filter_map(|entry| {
@@ -31,7 +29,6 @@ impl KvStore {
             .collect();
         ids.sort_unstable();
         let active_id = if ids.is_empty() { 0 } else { *ids.last().unwrap() };
-        // open segments
         let mut segments = HashMap::new();
         for &id in &ids {
             let seg = Segment::open(&dir, id)?;
@@ -47,16 +44,12 @@ impl KvStore {
             index: Index::new(),
             active_id,
         };
-        // rebuild simple index by scanning segments in order (low -> high),
-        // later records override earlier
         let mut ordered_ids: Vec<usize> = store.segments.keys().cloned().collect();
         ordered_ids.sort_unstable();
         for id in ordered_ids {
-            // scan segment file sequentially to build index
             let seg = store.segments.get_mut(&id).unwrap();
             let mut pos = 0u64;
             while pos < seg.len {
-                // read header: key_len + value_len
                 seg.file.seek(std::io::SeekFrom::Start(pos))?;
                 let mut buf8 = [0u8; 8];
                 if let Err(_) = seg.file.read_exact(&mut buf8) {
@@ -67,12 +60,10 @@ impl KvStore {
                 let value_len = u64::from_le_bytes(buf8);
                 let mut key_buf = vec![0u8; key_len as usize];
                 seg.file.read_exact(&mut key_buf)?;
-                // We don't need to read value now, just jump
                 let key = String::from_utf8_lossy(&key_buf).to_string();
                 let record_header_size = 8 + 8;
                 let record_size = record_header_size + key_len + value_len;
                 if value_len == u64::MAX {
-                    // tombstone -> remove
                     store.index.remove(&key);
                 } else {
                     store.index.insert(key, id, pos, value_len);
@@ -87,7 +78,6 @@ impl KvStore {
         self.segments.get_mut(&self.active_id).unwrap()
     }
 
-    /// Set a key -> value
     pub fn set(&mut self, key: &str, value: &[u8]) -> Result<()> {
         let key_b = key.as_bytes();
         let offset = self.active_segment_mut().append(key_b, value)?;
@@ -96,7 +86,6 @@ impl KvStore {
         Ok(())
     }
 
-    /// Get value for key, None if not found
     pub fn get(&mut self, key: &str) -> Result<Option<Vec<u8>>> {
         if let Some((seg_id, offset, value_len)) = self.index.get(key) {
             if let Some(seg) = self.segments.get_mut(seg_id) {
@@ -106,13 +95,10 @@ impl KvStore {
         Ok(None)
     }
 
-    /// Delete a key (writes a tombstone)
     pub fn delete(&mut self, key: &str) -> Result<()> {
-        // write tombstone with value_len == u64::MAX
         let key_b = key.as_bytes();
         let tombstone_value_len = u64::MAX;
         let mut seg = self.active_segment_mut();
-        // append header with value_len = u64::MAX
         let offset = seg.file.seek(std::io::SeekFrom::End(0))?;
         let key_len = key_b.len() as u64;
         seg.file.write_all(&key_len.to_le_bytes())?;
@@ -120,13 +106,10 @@ impl KvStore {
         seg.file.write_all(key_b)?;
         seg.file.flush()?;
         seg.len = seg.file.seek(std::io::SeekFrom::End(0))?;
-        // remove from index
         self.index.remove(key);
         Ok(())
     }
 
-    /// Force a simple compaction: create a new merged segment and replace older ones.
-    /// This is a naive compaction for demonstration.
     pub fn compact(&mut self) -> Result<()> {
         use crate::store::compaction::compact_segments;
         compact_segments(self)
