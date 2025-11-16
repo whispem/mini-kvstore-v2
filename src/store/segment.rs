@@ -45,11 +45,11 @@ impl Segment {
         let mut key_buf = vec![0u8; key_len as usize];
         self.file.read_exact(&mut key_buf)?;
         if value_len == u64::MAX {
-            return Ok(None);
+            Ok(None)
         } else {
             let mut val_buf = vec![0u8; value_len as usize];
             self.file.read_exact(&mut val_buf)?;
-            return Ok(Some(val_buf));
+            Ok(Some(val_buf))
         }
     }
 }
