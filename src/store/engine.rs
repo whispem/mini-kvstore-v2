@@ -201,3 +201,5 @@ impl KVStore {
         crate::store::compaction::compact_segments(self)
     }
 }
+
+pub use self::KVStore;
