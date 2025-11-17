@@ -109,8 +109,9 @@ impl KVStore {
                     }
                     Err(e) => {
                         eprintln!(
-                            "Failed to read record at position {} in segment {}: {}", pos, id, e
-                        );
+    "Failed to read record at position {} in segment {}: {}",
+    pos, id, e
+);
                         break;
                     }
                 }
