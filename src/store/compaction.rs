@@ -1,7 +1,6 @@
 use crate::store::engine::KVStore;
 use crate::store::segment::Segment;
 use std::fs;
-use std::path::Path;
 
 pub fn compact_segments(store: &mut KVStore) -> std::io::Result<()> {
     let data_dir = &store.config.data_dir;
@@ -27,7 +26,7 @@ pub fn compact_segments(store: &mut KVStore) -> std::io::Result<()> {
     store.index.map.clear();
 
     store.active_id = 0;
-    let mut active_seg = Segment::open(data_dir, store.active_id)?;
+    let active_seg = Segment::open(data_dir, store.active_id)?;
     store.segments.insert(store.active_id, active_seg);
 
     for (key, value) in live_data {
