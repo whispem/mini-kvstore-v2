@@ -2,7 +2,6 @@ use crate::store::config::StoreConfig;
 use crate::store::index::Index;
 use crate::store::record::{RecordHeader, TOMBSTONE_MARKER};
 use crate::store::segment::Segment;
-use crate::store::stats::StoreStats;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Error, ErrorKind, Result, Seek}; 
