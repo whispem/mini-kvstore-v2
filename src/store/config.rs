@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum FsyncPolicy {
     Always,
     Never,
@@ -8,6 +9,7 @@ pub enum FsyncPolicy {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct StoreConfig {
     pub data_dir: PathBuf,
     pub segment_size: u64,
