@@ -9,18 +9,26 @@ pub struct Index {
 
 impl Index {
     pub fn new() -> Self {
-        Index { map: HashMap::new() }
+        Self::default()
     }
 
     pub fn insert(&mut self, key: String, segment_id: usize, offset: u64, value_len: u64) {
         self.map.insert(key, (segment_id, offset, value_len));
     }
 
-    pub fn remove(&mut self, key: &str) {
-        self.map.remove(key);
+    pub fn remove(&mut self, key: &str) -> bool {
+        self.map.remove(key).is_some()
     }
 
     pub fn get(&self, key: &str) -> Option<&(usize, u64, u64)> {
         self.map.get(key)
+    }
+
+    pub fn len(&self) -> usize {
+        self.map.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
     }
 }
