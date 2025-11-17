@@ -29,7 +29,7 @@ impl Segment {
         self.file.write_all(&value_len.to_le_bytes())?;
         self.file.write_all(key)?;
         self.file.write_all(value)?;
-        self.file.sync_all()?; // Force fsync pour durabilité
+        self.file.sync_all()?; 
         
         self.len = self.file.seek(SeekFrom::End(0))?;
         Ok(offset)
