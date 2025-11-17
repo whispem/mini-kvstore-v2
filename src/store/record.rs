@@ -22,13 +22,11 @@ impl RecordHeader {
 
     pub const HEADER_SIZE: usize = 13;
 
-    pub fn write_to<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-       
+    pub fn write_to<W: std::io::Write>(&self, _writer: &mut W) -> std::io::Result<()> {
         Ok(())
     }
 
-    pub fn read_from<R: std::io::Read>(reader: &mut R) -> std::io::Result<Option<Self>> {
-        
+    pub fn read_from<R: std::io::Read>(_reader: &mut R) -> std::io::Result<Option<Self>> {
         Ok(None)
     }
 }
@@ -63,7 +61,6 @@ impl Record {
 }
 
 #[allow(dead_code)]
-pub fn compute_checksum(key: &[u8], value: &[u8]) -> u32 {
-    // Stub
+pub fn compute_checksum(_key: &[u8], _value: &[u8]) -> u32 {
     0
 }
