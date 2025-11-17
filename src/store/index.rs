@@ -30,3 +30,9 @@ impl Index {
         self.map.is_empty()
     }
 }
+
+impl Default for Index {
+    fn default() -> Self {
+        Self::new()
+    }
+}
