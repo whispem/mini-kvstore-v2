@@ -1,5 +1,5 @@
 use std::fs::{File, OpenOptions};
-use std::io::{Read, Result, Seek, SeekFrom, Write, Error, ErrorKind};
+use std::io::{Read, Result, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 
 const SEGMENT_SIZE_LIMIT: u64 = 1024 * 1024;
