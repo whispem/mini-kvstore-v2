@@ -1,11 +1,10 @@
 use crate::store::config::StoreConfig;
 use crate::store::index::Index;
-use crate::store::record::{RecordHeader, TOMBSTONE_MARKER};
 use crate::store::segment::Segment;
 use crate::store::stats::StoreStats;
 use std::collections::HashMap;
 use std::fs;
-use std::io::{Error, ErrorKind, Result, Seek}; 
+use std::io::{Error, ErrorKind, Result};
 use std::path::Path;
 
 pub struct KVStore {
@@ -78,7 +77,7 @@ impl KVStore {
             while pos < seg.len {
                 match seg.read_record_at(pos) {
                     Ok(Some((key, value_opt))) => {
-                        if let Some(value) = value_opt {
+                        if let Some(ref value) = value_opt {
                             self.index.insert(key.clone(), id, pos, value.len() as u64);
                         } else {
                             // Tombstone
@@ -89,11 +88,7 @@ impl KVStore {
                         // Format: key_len (8) + value_len (8) + key + value
                         let key_bytes = key.as_bytes();
                         let record_size = 8 + 8 + key_bytes.len() as u64 + 
-                            if value_opt.is_some() { 
-                                value_opt.as_ref().unwrap().len() as u64 
-                            } else { 
-                                0 
-                            };
+                            value_opt.as_ref().map(|v| v.len() as u64).unwrap_or(0);
                         pos += record_size;
                     }
                     Ok(None) => {
