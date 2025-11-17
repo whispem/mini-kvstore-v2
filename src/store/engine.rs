@@ -80,12 +80,9 @@ impl KVStore {
                         if let Some(ref value) = value_opt {
                             self.index.insert(key.clone(), id, pos, value.len() as u64);
                         } else {
-                            // Tombstone
                             self.index.remove(&key);
                         }
 
-                        // Calculate next position based on simple format
-                        // Format: key_len (8) + value_len (8) + key + value
                         let key_bytes = key.as_bytes();
                         let record_size = 8
                             + 8
@@ -111,7 +108,6 @@ impl KVStore {
 
     /// Set a key-value pair
     pub fn set(&mut self, key: &str, value: &[u8]) -> Result<()> {
-        // Check if active segment is full, create new one if needed
         let active_seg = self
             .segments
             .get_mut(&self.active_id)
@@ -151,12 +147,10 @@ impl KVStore {
 
     /// Delete a key
     pub fn delete(&mut self, key: &str) -> Result<()> {
-        // Check if key exists
         if !self.index.map.contains_key(key) {
-            return Ok(()); // Deleting non-existent key is a no-op
+            return Ok(());
         }
 
-        // Check if active segment is full
         let active_seg = self
             .segments
             .get_mut(&self.active_id)
