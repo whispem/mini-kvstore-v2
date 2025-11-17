@@ -4,7 +4,7 @@ use crate::store::record::{RecordHeader, TOMBSTONE_MARKER};
 use crate::store::segment::Segment;
 use std::collections::HashMap;
 use std::fs;
-use std::io::{Error, ErrorKind, Result, Seek}; 
+use std::io::{Error, ErrorKind, Result, Seek};
 use std::path::Path;
 
 pub struct KVStore {
@@ -87,7 +87,7 @@ impl KVStore {
                         }
 
                         // Calculate next position
-                        seg.file.seek(std::io::SeekFrom::Start(pos))?; 
+                        seg.file.seek(std::io::SeekFrom::Start(pos))?;
                         if let Some(header) = RecordHeader::read_from(&mut seg.file)? {
                             let record_size = RecordHeader::SIZE as u64
                                 + header.key_len as u64
@@ -102,17 +102,13 @@ impl KVStore {
                         }
                     }
                     Ok(None) => {
-                        eprintln!(
-                            "No record found at position {} in segment {}", pos, id
-                        );
+                        eprintln!("No record found at position {} in segment {}", pos, id);
                         break;
                     }
                     Err(e) => {
-                        eprintln!(
-    "Failed to read record at position {} in segment {}: {}",
-    pos, id, e
-);
-                        break;
+                        return Err(Error::new(ErrorKind::Other, format!(
+                            "Failed to read record at position {} in segment {}: {}", pos, id, e
+                        )));
                     }
                 }
             }
