@@ -46,9 +46,9 @@ impl KVStore {
             segments.insert(id, seg);
         }
 
-        if !segments.contains_key(&active_id) {
+        if let std::collections::hash_map::Entry::Vacant(e) = segments.entry(active_id) {
             let seg = Segment::open(&config.data_dir, active_id)?;
-            segments.insert(active_id, seg);
+            e.insert(seg);
         }
 
         let mut store = KVStore {
