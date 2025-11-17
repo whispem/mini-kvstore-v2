@@ -2,7 +2,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Result, Seek, SeekFrom, Write, Error, ErrorKind};
 use std::path::PathBuf;
 
-const SEGMENT_SIZE_LIMIT: u64 = 1024 * 1024; 
+const SEGMENT_SIZE_LIMIT: u64 = 1024 * 1024;
 
 pub struct Segment {
     pub file: File,
@@ -30,7 +30,7 @@ impl Segment {
         self.file.write_all(&value_len.to_le_bytes())?;
         self.file.write_all(key)?;
         self.file.write_all(value)?;
-        self.file.sync_all()?; 
+        self.file.sync_all()?;
         self.len = self.file.seek(SeekFrom::End(0))?;
         Ok(offset)
     }
@@ -38,7 +38,7 @@ impl Segment {
     pub fn append_tombstone(&mut self, key: &[u8]) -> Result<u64> {
         let offset = self.file.seek(SeekFrom::End(0))?;
         let key_len = key.len() as u64;
-        let value_len = u64::MAX; 
+        let value_len = u64::MAX; // Tombstone
         self.file.write_all(&key_len.to_le_bytes())?;
         self.file.write_all(&value_len.to_le_bytes())?;
         self.file.write_all(key)?;
@@ -83,6 +83,7 @@ impl Segment {
 
     pub fn read_value_at(&mut self, offset: u64) -> Result<Option<Vec<u8>>> {
         self.file.seek(SeekFrom::Start(offset))?;
+
         let mut buf8 = [0u8; 8];
         self.file.read_exact(&mut buf8)?;
         let key_len = u64::from_le_bytes(buf8);
