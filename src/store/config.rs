@@ -24,8 +24,10 @@ impl StoreConfig {
             compaction_threshold: 3,
         }
     }
+}
 
-    pub fn default() -> Self {
+impl Default for StoreConfig {
+    fn default() -> Self {
         StoreConfig {
             data_dir: PathBuf::from("data"),
             segment_size: 1024 * 1024,
