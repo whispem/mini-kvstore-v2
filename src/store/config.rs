@@ -16,6 +16,15 @@ pub struct StoreConfig {
 }
 
 impl StoreConfig {
+    pub fn new(data_dir: impl Into<PathBuf>) -> Self {
+        StoreConfig {
+            data_dir: data_dir.into(),
+            segment_size: 1024 * 1024,
+            fsync: FsyncPolicy::Always,
+            compaction_threshold: 3,
+        }
+    }
+
     pub fn default() -> Self {
         StoreConfig {
             data_dir: PathBuf::from("data"),
