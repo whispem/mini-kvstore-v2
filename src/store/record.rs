@@ -1,4 +1,4 @@
-use std::io::{Read, Write, Result};
+use std::io::{Read, Result, Write};
 
 pub const TOMBSTONE_MARKER: u32 = u32::MAX;
 
@@ -19,9 +19,9 @@ impl RecordHeader {
             checksum,
         }
     }
-    
+
     pub const HEADER_SIZE: usize = 13;
-    
+
     pub fn write_to<W: Write>(&self, writer: &mut W) -> Result<()> {
         writer.write_all(&self.key_len.to_le_bytes())?;
         writer.write_all(&self.value_len.to_le_bytes())?;
@@ -29,10 +29,10 @@ impl RecordHeader {
         writer.write_all(&self.checksum.to_le_bytes())?;
         Ok(())
     }
-    
+
     pub fn read_from<R: Read>(reader: &mut R) -> Result<Option<Self>> {
         let mut buf = [0u8; Self::HEADER_SIZE];
-        
+
         // Try to read header, return None if EOF
         match reader.read_exact(&mut buf) {
             Ok(_) => {
@@ -40,7 +40,7 @@ impl RecordHeader {
                 let value_len = u32::from_le_bytes([buf[4], buf[5], buf[6], buf[7]]);
                 let flags = buf[8];
                 let checksum = u32::from_le_bytes([buf[9], buf[10], buf[11], buf[12]]);
-                
+
                 Ok(Some(Self {
                     key_len,
                     value_len,
@@ -48,7 +48,7 @@ impl RecordHeader {
                     checksum,
                 }))
             }
-            Err(_) => Ok(None)
+            Err(_) => Ok(None),
         }
     }
 }
@@ -62,18 +62,18 @@ pub struct Record {
 
 impl Record {
     pub fn new(key: Vec<u8>, value: Vec<u8>) -> Self {
-        Self { 
-            key, 
-            value, 
-            deleted: false 
+        Self {
+            key,
+            value,
+            deleted: false,
         }
     }
-    
+
     pub fn tombstone(key: Vec<u8>) -> Self {
-        Self { 
-            key, 
-            value: Vec::new(), 
-            deleted: true 
+        Self {
+            key,
+            value: Vec::new(),
+            deleted: true,
         }
     }
 }

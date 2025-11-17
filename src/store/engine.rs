@@ -87,8 +87,10 @@ impl KVStore {
                         // Calculate next position based on simple format
                         // Format: key_len (8) + value_len (8) + key + value
                         let key_bytes = key.as_bytes();
-                        let record_size = 8 + 8 + key_bytes.len() as u64 + 
-                            value_opt.as_ref().map(|v| v.len() as u64).unwrap_or(0);
+                        let record_size = 8
+                            + 8
+                            + key_bytes.len() as u64
+                            + value_opt.as_ref().map(|v| v.len() as u64).unwrap_or(0);
                         pos += record_size;
                     }
                     Ok(None) => {
@@ -96,7 +98,7 @@ impl KVStore {
                     }
                     Err(e) => {
                         eprintln!(
-                            "Failed to read record at position {} in segment {}: {}", 
+                            "Failed to read record at position {} in segment {}: {}",
                             pos, id, e
                         );
                         break;
@@ -110,7 +112,9 @@ impl KVStore {
     /// Set a key-value pair
     pub fn set(&mut self, key: &str, value: &[u8]) -> Result<()> {
         // Check if active segment is full, create new one if needed
-        let active_seg = self.segments.get_mut(&self.active_id)
+        let active_seg = self
+            .segments
+            .get_mut(&self.active_id)
             .ok_or_else(|| Error::new(ErrorKind::NotFound, "Active segment not found"))?;
 
         if active_seg.is_full() {
@@ -119,11 +123,14 @@ impl KVStore {
             self.segments.insert(self.active_id, new_seg);
         }
 
-        let active_seg = self.segments.get_mut(&self.active_id)
+        let active_seg = self
+            .segments
+            .get_mut(&self.active_id)
             .ok_or_else(|| Error::new(ErrorKind::NotFound, "Active segment not found"))?;
 
         let offset = active_seg.append(key.as_bytes(), value)?;
-        self.index.insert(key.to_string(), self.active_id, offset, value.len() as u64);
+        self.index
+            .insert(key.to_string(), self.active_id, offset, value.len() as u64);
 
         Ok(())
     }
@@ -131,7 +138,9 @@ impl KVStore {
     /// Get a value by key
     pub fn get(&mut self, key: &str) -> Result<Option<Vec<u8>>> {
         if let Some(&(seg_id, offset, _len)) = self.index.get(key) {
-            let seg = self.segments.get_mut(&seg_id)
+            let seg = self
+                .segments
+                .get_mut(&seg_id)
                 .ok_or_else(|| Error::new(ErrorKind::NotFound, "Segment not found"))?;
 
             seg.read_value_at(offset)
@@ -148,7 +157,9 @@ impl KVStore {
         }
 
         // Check if active segment is full
-        let active_seg = self.segments.get_mut(&self.active_id)
+        let active_seg = self
+            .segments
+            .get_mut(&self.active_id)
             .ok_or_else(|| Error::new(ErrorKind::NotFound, "Active segment not found"))?;
 
         if active_seg.is_full() {
@@ -157,7 +168,9 @@ impl KVStore {
             self.segments.insert(self.active_id, new_seg);
         }
 
-        let active_seg = self.segments.get_mut(&self.active_id)
+        let active_seg = self
+            .segments
+            .get_mut(&self.active_id)
             .ok_or_else(|| Error::new(ErrorKind::NotFound, "Active segment not found"))?;
 
         active_seg.append_tombstone(key.as_bytes())?;
@@ -175,9 +188,9 @@ impl KVStore {
     pub fn stats(&self) -> StoreStats {
         let num_keys = self.index.len();
         let num_segments = self.segments.len();
-        
+
         let total_bytes: u64 = self.segments.values().map(|s| s.len).sum();
-        
+
         let oldest_segment_id = self.segments.keys().copied().min().unwrap_or(0);
 
         StoreStats {
