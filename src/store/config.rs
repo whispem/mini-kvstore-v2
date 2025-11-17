@@ -1,18 +1,22 @@
 #[derive(Debug, Clone)]
-pub struct Config {
-    pub db_path: String,
-    pub segment_size: usize,
+pub struct StoreConfig {
+    pub data_dir: std::path::PathBuf,
+    pub segment_size: u64,
+    pub fsync_policy: FsyncPolicy,
 }
 
-impl Config {
-    pub fn new(db_path: String, segment_size: usize) -> Self {
-        Self { db_path, segment_size }
-    }
+#[derive(Debug, Clone, Copy)]
+pub enum FsyncPolicy {
+    Always,
+    Never,
+}
 
-    pub fn default() -> Self {
-        Self {
-            db_path: String::from("./data"),
-            segment_size: 1024 * 1024,
+impl StoreConfig {
+    pub fn new(data_dir: &std::path::Path) -> Self {
+        StoreConfig {
+            data_dir: data_dir.to_path_buf(),
+            segment_size: 1024 * 1024, 
+            fsync_policy: FsyncPolicy::Always,
         }
     }
 }
