@@ -1,6 +1,6 @@
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Result, Seek, SeekFrom, Write};
-use std::path::Path; 
+use std::path::Path;
 
 const SEGMENT_SIZE_LIMIT: u64 = 1024 * 1024;
 
@@ -10,7 +10,6 @@ pub struct Segment {
 }
 
 impl Segment {
-    
     pub fn open(dir: &Path, id: usize) -> Result<Self> {
         let filename = format!("segment-{}.dat", id);
         let path = dir.join(filename);
@@ -55,7 +54,7 @@ impl Segment {
     pub fn read_record_at(&mut self, offset: u64) -> Result<Option<(String, Option<Vec<u8>>)>> {
         self.file.seek(SeekFrom::Start(offset))?;
         let mut buf8 = [0u8; 8];
-        
+
         if self.file.read_exact(&mut buf8).is_err() {
             return Ok(None);
         }
@@ -73,7 +72,6 @@ impl Segment {
         let key = String::from_utf8_lossy(&key_buf).to_string();
 
         if value_len == u64::MAX {
-           
             Ok(Some((key, None))) // tombstone
         } else {
             let mut val_buf = vec![0u8; value_len as usize];
