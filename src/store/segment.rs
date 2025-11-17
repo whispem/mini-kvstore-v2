@@ -1,6 +1,6 @@
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Result, Seek, SeekFrom, Write};
-use std::path::PathBuf;
+use std::path::Path; 
 
 const SEGMENT_SIZE_LIMIT: u64 = 1024 * 1024;
 
@@ -10,7 +10,8 @@ pub struct Segment {
 }
 
 impl Segment {
-    pub fn open(dir: &PathBuf, id: usize) -> Result<Self> {
+    
+    pub fn open(dir: &Path, id: usize) -> Result<Self> {
         let filename = format!("segment-{}.dat", id);
         let path = dir.join(filename);
         let mut file = OpenOptions::new()
@@ -54,30 +55,32 @@ impl Segment {
     pub fn read_record_at(&mut self, offset: u64) -> Result<Option<(String, Option<Vec<u8>>)>> {
         self.file.seek(SeekFrom::Start(offset))?;
         let mut buf8 = [0u8; 8];
-        if let Err(_) = self.file.read_exact(&mut buf8) {
+        
+        if self.file.read_exact(&mut buf8).is_err() {
             return Ok(None);
         }
         let key_len = u64::from_le_bytes(buf8);
 
-        if let Err(_) = self.file.read_exact(&mut buf8) {
+        if self.file.read_exact(&mut buf8).is_err() {
             return Ok(None);
         }
         let value_len = u64::from_le_bytes(buf8);
 
         let mut key_buf = vec![0u8; key_len as usize];
-        if let Err(_) = self.file.read_exact(&mut key_buf) {
+        if self.file.read_exact(&mut key_buf).is_err() {
             return Ok(None);
         }
         let key = String::from_utf8_lossy(&key_buf).to_string();
 
         if value_len == u64::MAX {
-            return Ok(Some((key, None))); // tombstone
+           
+            Ok(Some((key, None))) // tombstone
         } else {
             let mut val_buf = vec![0u8; value_len as usize];
-            if let Err(_) = self.file.read_exact(&mut val_buf) {
+            if self.file.read_exact(&mut val_buf).is_err() {
                 return Ok(None);
             }
-            return Ok(Some((key, Some(val_buf))));
+            Ok(Some((key, Some(val_buf))))
         }
     }
 
