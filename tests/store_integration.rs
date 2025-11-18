@@ -138,10 +138,10 @@ fn utf8_keys_and_values() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut store = KVStore::open(test_dir)?;
 
-    store.set("clé", "valeur".as_bytes())?;
+    store.set("key", "value".as_bytes())?;
     store.set("🔑", "🎉".as_bytes())?;
 
-    assert_eq!(store.get("clé")?, Some(b"valeur".to_vec()));
+    assert_eq!(store.get("key")?, Some(b"value".to_vec()));
     assert_eq!(store.get("🔑")?, Some("🎉".as_bytes().to_vec()));
 
     Ok(())
