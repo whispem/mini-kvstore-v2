@@ -1,4 +1,4 @@
-use mini_kvstore_v2::store::KVStore;
+use mini_kvstore_v2::KVStore;
 use std::fs::{create_dir_all, remove_dir_all};
 use std::path::Path;
 
@@ -9,7 +9,7 @@ fn setup_test_dir(path: &str) {
 }
 
 #[test]
-fn can_set_and_get_value() -> std::io::Result<()> {
+fn can_set_and_get_value() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/can_set_and_get_value";
     setup_test_dir(test_dir);
 
@@ -22,7 +22,7 @@ fn can_set_and_get_value() -> std::io::Result<()> {
 }
 
 #[test]
-fn can_delete_value() -> std::io::Result<()> {
+fn can_delete_value() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/can_delete_value";
     setup_test_dir(test_dir);
 
@@ -36,7 +36,7 @@ fn can_delete_value() -> std::io::Result<()> {
 }
 
 #[test]
-fn overwriting_value_updates_storage() -> std::io::Result<()> {
+fn overwriting_value_updates_storage() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/overwrite_value";
     setup_test_dir(test_dir);
 
@@ -51,7 +51,7 @@ fn overwriting_value_updates_storage() -> std::io::Result<()> {
 }
 
 #[test]
-fn missing_key_returns_none() -> std::io::Result<()> {
+fn missing_key_returns_none() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/missing_key";
     setup_test_dir(test_dir);
 
@@ -63,7 +63,7 @@ fn missing_key_returns_none() -> std::io::Result<()> {
 }
 
 #[test]
-fn delete_nonexistent_key_is_safe() -> std::io::Result<()> {
+fn delete_nonexistent_key_is_safe() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/delete_nonexistent";
     setup_test_dir(test_dir);
 
@@ -76,7 +76,7 @@ fn delete_nonexistent_key_is_safe() -> std::io::Result<()> {
 }
 
 #[test]
-fn persistence_after_reopen() -> std::io::Result<()> {
+fn persistence_after_reopen() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/persistence";
     setup_test_dir(test_dir);
 
@@ -92,7 +92,7 @@ fn persistence_after_reopen() -> std::io::Result<()> {
 }
 
 #[test]
-fn compaction_preserves_data() -> std::io::Result<()> {
+fn compaction_preserves_data() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/compaction";
     setup_test_dir(test_dir);
 
@@ -115,7 +115,7 @@ fn compaction_preserves_data() -> std::io::Result<()> {
 }
 
 #[test]
-fn large_value_handling() -> std::io::Result<()> {
+fn large_value_handling() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/large_value";
     setup_test_dir(test_dir);
 
@@ -132,7 +132,7 @@ fn large_value_handling() -> std::io::Result<()> {
 }
 
 #[test]
-fn utf8_keys_and_values() -> std::io::Result<()> {
+fn utf8_keys_and_values() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/utf8";
     setup_test_dir(test_dir);
 
@@ -148,7 +148,7 @@ fn utf8_keys_and_values() -> std::io::Result<()> {
 }
 
 #[test]
-fn empty_value() -> std::io::Result<()> {
+fn empty_value() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/empty_value";
     setup_test_dir(test_dir);
 
@@ -161,7 +161,7 @@ fn empty_value() -> std::io::Result<()> {
 }
 
 #[test]
-fn many_keys() -> std::io::Result<()> {
+fn many_keys() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/many_keys";
     setup_test_dir(test_dir);
 
@@ -186,7 +186,7 @@ fn many_keys() -> std::io::Result<()> {
 }
 
 #[test]
-fn compaction_after_many_updates() -> std::io::Result<()> {
+fn compaction_after_many_updates() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/compaction_updates";
     setup_test_dir(test_dir);
 
@@ -219,7 +219,7 @@ fn compaction_after_many_updates() -> std::io::Result<()> {
 }
 
 #[test]
-fn list_keys_works() -> std::io::Result<()> {
+fn list_keys_works() -> Result<(), Box<dyn std::error::Error>> {
     let test_dir = "tests_data/list_keys";
     setup_test_dir(test_dir);
 
