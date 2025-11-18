@@ -14,9 +14,7 @@ mod tests {
     }
 
     fn cleanup_test_dir(path: &str) {
-        if let Err(e) = remove_dir_all(Path::new(path)) {
-            eprintln!("Erreur lors du nettoyage du dossier de test '{}': {}", path, e);
-        }
+        let _ = remove_dir_all(Path::new(path));
     }
 
     #[test]
@@ -133,13 +131,19 @@ mod tests {
 
         let mut store = KVStore::open(test_dir).unwrap();
 
+        // Write multiple versions of the same keys
         for i in 0..10 {
-            store.set("key1", format!("value{}", i).as_bytes()).unwrap();
-            store.set("key2", format!("value{}", i).as_bytes()).unwrap();
+            store
+                .set("key1", format!("value{}", i).as_bytes())
+                .unwrap();
+            store
+                .set("key2", format!("value{}", i).as_bytes())
+                .unwrap();
         }
 
         store.compact().unwrap();
 
+        // Verify data is still correct after compaction
         assert_eq!(store.get("key1").unwrap(), Some(b"value9".to_vec()));
         assert_eq!(store.get("key2").unwrap(), Some(b"value9".to_vec()));
 
@@ -151,11 +155,13 @@ mod tests {
         let test_dir = "tests_data/unit_persistence";
         setup_test_dir(test_dir);
 
+        // Write data
         {
             let mut store = KVStore::open(test_dir).unwrap();
             store.set("persistent", b"data").unwrap();
         }
 
+        // Reopen and verify
         {
             let mut store = KVStore::open(test_dir).unwrap();
             assert_eq!(store.get("persistent").unwrap(), Some(b"data".to_vec()));
@@ -182,4 +188,4 @@ mod tests {
 
         cleanup_test_dir(test_dir);
     }
-} // EOF
+}
