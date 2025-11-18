@@ -133,12 +133,8 @@ mod tests {
 
         // Write multiple versions of the same keys
         for i in 0..10 {
-            store
-                .set("key1", format!("value{}", i).as_bytes())
-                .unwrap();
-            store
-                .set("key2", format!("value{}", i).as_bytes())
-                .unwrap();
+            store.set("key1", format!("value{}", i).as_bytes()).unwrap();
+            store.set("key2", format!("value{}", i).as_bytes()).unwrap();
         }
 
         store.compact().unwrap();
