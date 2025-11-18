@@ -131,7 +131,6 @@ mod tests {
 
         let mut store = KVStore::open(test_dir).unwrap();
 
-        // Write multiple versions of the same keys
         for i in 0..10 {
             store.set("key1", format!("value{}", i).as_bytes()).unwrap();
             store.set("key2", format!("value{}", i).as_bytes()).unwrap();
@@ -139,7 +138,6 @@ mod tests {
 
         store.compact().unwrap();
 
-        // Verify data is still correct after compaction
         assert_eq!(store.get("key1").unwrap(), Some(b"value9".to_vec()));
         assert_eq!(store.get("key2").unwrap(), Some(b"value9".to_vec()));
 
@@ -183,4 +181,3 @@ mod tests {
         cleanup_test_dir(test_dir);
     }
 }
-
