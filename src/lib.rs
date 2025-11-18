@@ -1,4 +1,4 @@
-pub mod store; 
+pub mod store;
 pub use store::KVStore;
 
 #[cfg(test)]
