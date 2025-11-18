@@ -1,6 +1,6 @@
 use mini_kvstore_v2::KVStore;
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Persistence Example ===\n");
 
     let data_dir = "persistence_example";
