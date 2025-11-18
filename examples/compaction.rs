@@ -1,6 +1,6 @@
 use mini_kvstore_v2::KVStore;
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Compaction Example ===\n");
 
     let mut store = KVStore::open("compaction_example")?;
