@@ -1,8 +1,9 @@
 use crate::store::engine::KVStore;
+use crate::store::error::Result;
 use crate::store::segment::Segment;
 use std::fs;
 
-pub fn compact_segments(store: &mut KVStore) -> std::io::Result<()> {
+pub fn compact_segments(store: &mut KVStore) -> Result<()> {
     let data_dir = &store.config.data_dir;
     let mut live_data: Vec<(String, Vec<u8>)> = Vec::new();
 
