@@ -1,5 +1,5 @@
 pub mod compaction;
-mod config;
+pub mod config;
 mod engine;
 mod index;
 mod record;
