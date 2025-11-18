@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::io::{self, Write};
 
 mod store;
@@ -15,7 +16,7 @@ fn print_help() {
     println!("  quit / exit              — exit");
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<()> {
     let mut kv = KVStore::open("data")?;
     println!("mini-kvstore-v2 — segmented log with checksums, compaction, and auto-rotation");
     println!();
@@ -88,37 +89,4 @@ fn main() -> anyhow::Result<()> {
 
                 match kv.delete(key) {
                     Ok(_) => println!("Deleted"),
-                    Err(e) => println!("Error: {}", e),
-                }
-            }
-            "list" => {
-                let keys = kv.list_keys();
-                if keys.is_empty() {
-                    println!("No keys in store");
-                } else {
-                    println!("Keys ({}):", keys.len());
-                    for key in keys {
-                        println!("  {}", key);
-                    }
-                }
-            }
-            "compact" => match kv.compact() {
-                Ok(_) => println!("Compaction finished"),
-                Err(e) => println!("Compaction error: {}", e),
-            },
-            "stats" => {
-                let stats = kv.stats();
-                println!("{}", stats);
-            }
-            "help" => print_help(),
-            "quit" | "exit" => break,
-            other => println!(
-                "Unknown command: '{}'. Type 'help' for available commands.",
-                other
-            ),
-        }
-    }
-
-    println!("Goodbye.");
-    Ok(())
-}
+                    Err(e) => println!("Error: {}", e
