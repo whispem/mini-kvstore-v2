@@ -14,7 +14,9 @@ mod tests {
     }
 
     fn cleanup_test_dir(path: &str) {
-        let _ = remove_dir_all(Path::new(path));
+        if let Err(e) = remove_dir_all(Path::new(path)) {
+            eprintln!("Erreur lors du nettoyage du dossier de test '{}': {}", path, e);
+        }
     }
 
     #[test]
