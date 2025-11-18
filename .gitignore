@@ -23,6 +23,11 @@ target/
 # Store data directories
 data/
 tests_data/
+bench_data/
+example_data/
+compaction_example/
+persistence_example/
+large_dataset_example/
 
 # OS files
 .DS_Store
