@@ -90,3 +90,36 @@ fn main() -> Result<()> {
                 match kv.delete(key) {
                     Ok(_) => println!("Deleted"),
                     Err(e) => println!("Error: {}", e
+}
+            }
+            "list" => {
+                let keys = kv.list_keys();
+                if keys.is_empty() {
+                    println!("No keys in store");
+                } else {
+                    println!("Keys ({}):", keys.len());
+                    for key in keys {
+                        println!("  {}", key);
+                    }
+                }
+            }
+            "compact" => match kv.compact() {
+                Ok(_) => println!("Compaction finished"),
+                Err(e) => println!("Compaction error: {}", e),
+            },
+            "stats" => {
+                let stats = kv.stats();
+                println!("{}", stats);
+            }
+            "help" => print_help(),
+            "quit" | "exit" => break,
+            other => println!(
+                "Unknown command: '{}'. Type 'help' for available commands.",
+                other
+            ),
+        }
+    }
+
+    println!("Goodbye.");
+    Ok(())
+}
