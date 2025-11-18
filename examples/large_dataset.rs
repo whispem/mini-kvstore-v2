@@ -1,7 +1,7 @@
 use mini_kvstore_v2::KVStore;
 use std::time::Instant;
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Large Dataset Example ===\n");
 
     let mut store = KVStore::open("large_dataset_example")?;
