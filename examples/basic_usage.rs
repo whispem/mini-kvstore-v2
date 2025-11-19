@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(stats.num_keys, 3, "Stats should show 3 keys");
     assert!(stats.num_segments >= 1, "Should have at least one segment");
     assert!(stats.total_bytes > 0, "Should have non-zero data");
-    
+
     println!("\n✓ Store statistics:");
     println!("{}", stats);
 
