@@ -8,4 +8,3 @@ mod segment;
 mod stats;
 
 pub use engine::KVStore;
-pub use error::{Result, StoreError};
