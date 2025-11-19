@@ -1,7 +1,7 @@
 pub mod compaction;
 pub mod config;
-pub mod error;
 mod engine;
+pub mod error;
 mod index;
 mod record;
 mod segment;
