@@ -1,4 +1,4 @@
-use anyhow::Result;
+use mini_kvstore_v2::Result;
 use std::io::{self, Write};
 
 mod store;
