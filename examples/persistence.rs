@@ -32,21 +32,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(b"first".to_vec()),
             "Session value should persist"
         );
-        
+
         let counter = store.get("counter")?;
         assert_eq!(
             counter,
             Some(b"42".to_vec()),
             "Counter value should persist"
         );
-        
+
         let name = store.get("name")?;
         assert_eq!(
             name,
             Some(b"Test Store".to_vec()),
             "Name value should persist"
         );
-        
+
         println!("✓ All data persisted correctly from session 1");
 
         // Modify data
@@ -73,21 +73,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(b"second".to_vec()),
             "Updated session value should persist"
         );
-        
+
         let counter = store.get("counter")?;
         assert_eq!(
             counter,
             Some(b"43".to_vec()),
             "Updated counter value should persist"
         );
-        
+
         let name = store.get("name")?;
-        assert_eq!(
-            name,
-            None,
-            "Deleted key should not exist"
-        );
-        
+        assert_eq!(name, None, "Deleted key should not exist");
+
         println!("✓ Modifications persisted correctly from session 2");
 
         let stats = store.stats();
