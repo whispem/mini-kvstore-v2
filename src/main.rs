@@ -1,5 +1,5 @@
-use store::error::Result;
 use std::io::{self, Write};
+use store::error::Result;
 
 mod store;
 use store::KVStore;
