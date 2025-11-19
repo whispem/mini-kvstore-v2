@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let key = format!("user:{:05}:data", i);
         let value = store.get(&key)?;
         assert!(value.is_some(), "Key {} should exist", key);
-        
+
         // Verify content for a few samples
         if i % 1000 == 0 {
             let expected = format!("User data for ID {}", i);
@@ -77,14 +77,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(stats.num_keys, 10_000, "Should have 10,000 keys");
     assert!(stats.num_segments >= 1, "Should have at least one segment");
     assert!(stats.total_bytes > 0, "Should have non-zero data size");
-    
+
     println!("\n✓ Final statistics:");
     println!("{}", stats);
 
     // Calculate and display performance metrics
     let insert_rate = 10_000.0 / insert_duration.as_secs_f64();
     let read_rate = 1_000.0 / read_duration.as_secs_f64();
-    
+
     println!("\nPerformance:");
     println!("  Insert rate: {:.0} keys/sec", insert_rate);
     println!("  Read rate: {:.0} keys/sec", read_rate);
