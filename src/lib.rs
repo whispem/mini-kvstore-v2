@@ -1,6 +1,6 @@
 pub mod store;
-pub use store::KVStore;
 pub use store::error::{Result, StoreError};
+pub use store::KVStore;
 
 #[cfg(test)]
 mod tests {
