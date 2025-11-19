@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stats_before.num_keys, 100,
         "Should have exactly 100 unique keys"
     );
-    
+
     println!("\nBefore compaction:");
     println!("  Keys: {}", stats_before.num_keys);
     println!("  Segments: {}", stats_before.num_segments);
@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stats_after.total_bytes < stats_before.total_bytes,
         "Total bytes should decrease after compaction"
     );
-    
+
     println!("\nAfter compaction:");
     println!("  Keys: {}", stats_after.num_keys);
     println!("  Segments: {}", stats_after.num_segments);
@@ -70,14 +70,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let saved_mb = (stats_before.total_bytes - stats_after.total_bytes) as f64 / (1024.0 * 1024.0);
     let saved_pct = (saved_mb / stats_before.total_mb()) * 100.0;
-    
+
     assert!(saved_mb > 0.0, "Should have saved some space");
-    
-    println!(
-        "\n✓ Saved {:.2} MB ({:.1}%)",
-        saved_mb,
-        saved_pct
-    );
+
+    println!("\n✓ Saved {:.2} MB ({:.1}%)", saved_mb, saved_pct);
 
     Ok(())
 }
