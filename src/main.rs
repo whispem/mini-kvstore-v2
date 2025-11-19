@@ -1,4 +1,4 @@
-use mini_kvstore_v2::Result;
+use store::error::Result;
 use std::io::{self, Write};
 
 mod store;
@@ -89,8 +89,8 @@ fn main() -> Result<()> {
 
                 match kv.delete(key) {
                     Ok(_) => println!("Deleted"),
-                    Err(e) => println!("Error: {}", e)
-}
+                    Err(e) => println!("Error: {}", e),
+                }
             }
             "list" => {
                 let keys = kv.list_keys();
