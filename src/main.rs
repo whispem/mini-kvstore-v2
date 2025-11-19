@@ -89,7 +89,7 @@ fn main() -> Result<()> {
 
                 match kv.delete(key) {
                     Ok(_) => println!("Deleted"),
-                    Err(e) => println!("Error: {}", e
+                    Err(e) => println!("Error: {}", e)
 }
             }
             "list" => {
