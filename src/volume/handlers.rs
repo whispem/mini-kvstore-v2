@@ -120,7 +120,7 @@ mod tests {
     use axum::body::Body;
     use axum::http::{Request, StatusCode as HttpStatus};
     use std::sync::{Arc, Mutex};
-    use tower::ServiceExt; // <-- Import TOWER et PAS AXUM
+    use tower::ServiceExt; // Import correct avec tower v0.5 + util
 
     fn setup_test_storage() -> Arc<Mutex<BlobStorage>> {
         Arc::new(Mutex::new(
