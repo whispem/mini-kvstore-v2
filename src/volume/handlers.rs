@@ -53,71 +53,60 @@ async fn health_check(State(state): State<AppState>) -> impl IntoResponse {
 /// PUT /blobs/:key - Store a blob
 async fn put_blob(State(state): State<AppState>, Path(key): Path<String>, body: Bytes) -> Response {
     let mut storage = state.storage.lock().unwrap();
-
     match storage.put(&key, &body) {
         Ok(meta) => (StatusCode::CREATED, Json(meta)).into_response(),
-        Err(e) => {
-            let error = ErrorResponse {
-                error: format!("Failed to store blob: {}", e),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response()
-        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse {
+                error: e.to_string(),
+            }),
+        )
+            .into_response(),
     }
 }
 
 /// GET /blobs/:key - Retrieve a blob
 async fn get_blob(State(state): State<AppState>, Path(key): Path<String>) -> Response {
-    let mut storage = state.storage.lock().unwrap();
-
+    let storage = state.storage.lock().unwrap();
     match storage.get(&key) {
-        Ok(Some(data)) => (StatusCode::OK, data).into_response(),
-        Ok(None) => {
-            let error = ErrorResponse {
+        Ok(Some(blob)) => (StatusCode::OK, Json(blob)).into_response(),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
                 error: "Blob not found".to_string(),
-            };
-            (StatusCode::NOT_FOUND, Json(error)).into_response()
-        }
-        Err(e) => {
-            let error = ErrorResponse {
-                error: format!("Failed to retrieve blob: {}", e),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response()
-        }
+            }),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse {
+                error: e.to_string(),
+            }),
+        )
+            .into_response(),
     }
 }
 
 /// DELETE /blobs/:key - Delete a blob
 async fn delete_blob(State(state): State<AppState>, Path(key): Path<String>) -> Response {
     let mut storage = state.storage.lock().unwrap();
-
     match storage.delete(&key) {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
-        Err(e) => {
-            let error = ErrorResponse {
-                error: format!("Failed to delete blob: {}", e),
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response()
-        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse {
+                error: e.to_string(),
+            }),
+        )
+            .into_response(),
     }
 }
 
-/// GET /blobs - List all blob keys
-async fn list_blobs(State(state): State<AppState>) -> Response {
+/// GET /blobs - List all keys
+async fn list_blobs(State(state): State<AppState>) -> impl IntoResponse {
     let storage = state.storage.lock().unwrap();
     let keys = storage.list_keys();
-
-    #[derive(Serialize)]
-    struct ListResponse {
-        count: usize,
-        keys: Vec<String>,
-    }
-
-    let response = ListResponse {
-        count: keys.len(),
-        keys,
-    };
-
-    (StatusCode::OK, Json(response)).into_response()
+    (StatusCode::OK, Json(keys))
 }
 
 /// Creates the router with all volume endpoints
@@ -140,12 +129,11 @@ mod tests {
     use crate::volume::storage::BlobStorage;
     use axum::body::Body;
     use axum::http::{Request, StatusCode as HttpStatus};
-    use tower::ServiceExt;
+    use std::sync::{Arc, Mutex};
+    use tower::util::ServiceExt; // <-- CORRIGÉ ici aussi !
 
     fn setup_test_storage() -> Arc<Mutex<BlobStorage>> {
-        let storage = BlobStorage::new("tests_data/volume_handlers", "test-vol".to_string())
-            .expect("Failed to create storage");
-        Arc::new(Mutex::new(storage))
+        Arc::new(Mutex::new(BlobStorage::new("test_volume", "test-vol".to_string()).unwrap()))
     }
 
     #[tokio::test]
@@ -154,6 +142,7 @@ mod tests {
         let app = create_router(storage);
 
         let response = app
+            .clone()
             .oneshot(
                 Request::builder()
                     .uri("/health")
