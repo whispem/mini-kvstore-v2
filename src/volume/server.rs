@@ -1,6 +1,6 @@
 //! Volume server startup and configuration
 
-use crate::volume::{handlers, BlobStorage};
+use crate::{handlers, storage::BlobStorage};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
