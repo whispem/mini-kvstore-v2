@@ -1,8 +1,8 @@
 //! Blob storage wrapper around KVStore with metadata tracking
 
-use mini_kvstore_v2::store::error::Result as StoreResult;
-use mini_kvstore_v2::store::stats::StoreStats;
-use mini_kvstore_v2::KVStore;
+use crate::store::error::Result as StoreResult;
+use crate::store::stats::StoreStats;
+use crate::KVStore;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
