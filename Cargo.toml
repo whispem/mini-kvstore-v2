@@ -9,7 +9,7 @@ tower = { version = "0.5.2", features = ["util"] }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.0", features = ["full"] }
 parking_lot = "0.12"
-anyhow = "1.0"
+anyhow = "1.0.100"
 ciborium = "0.2"
 ciborium-io = "0.2"
 ciborium-ll = "0.2"
@@ -41,7 +41,6 @@ num-traits = "0.2"
 rayon = "1.11.0"
 rayon-core = "1.13.0"
 either = "1.15.0"
-anyhow = "1.0.100"
 cast = "0.3.0"
 serde_json = "1.0"
 serde_urlencoded = "0.7.1"
