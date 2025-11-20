@@ -80,7 +80,10 @@ pub async fn start_volume_server(config: VolumeConfig) -> Result<(), Box<dyn std
     // Start server
     println!("Volume server ready!");
     println!("Try:");
-    println!("  curl -X POST http://{}/blobs/test -d 'hello world'", config.bind_addr);
+    println!(
+        "  curl -X POST http://{}/blobs/test -d 'hello world'",
+        config.bind_addr
+    );
     println!("  curl http://{}/blobs/test", config.bind_addr);
     println!("  curl http://{}/health", config.bind_addr);
     println!();
