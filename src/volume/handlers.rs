@@ -1,6 +1,6 @@
 //! HTTP handlers for volume blob operations
 
-use crate::volume::storage::BlobStorage;  
+use crate::storage::BlobStorage;
 use axum::{
     body::Bytes,
     extract::{Path, State},
@@ -147,7 +147,7 @@ pub fn create_router(storage: Arc<Mutex<BlobStorage>>) -> Router {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::volume::BlobStorage;
+    use crate::storage::BlobStorage;
     use axum::body::Body;
     use axum::http::{Request, StatusCode as HttpStatus};
     use tower::ServiceExt;
