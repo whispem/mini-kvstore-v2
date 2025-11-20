@@ -67,7 +67,7 @@ async fn put_blob(State(state): State<AppState>, Path(key): Path<String>, body: 
 
 /// GET /blobs/:key - Retrieve a blob
 async fn get_blob(State(state): State<AppState>, Path(key): Path<String>) -> Response {
-    let storage = state.storage.lock().unwrap();
+    let mut storage = state.storage.lock().unwrap(); // <-- CORRECTION ici
     match storage.get(&key) {
         Ok(Some(blob)) => (StatusCode::OK, Json(blob)).into_response(),
         Ok(None) => (
@@ -130,7 +130,7 @@ mod tests {
     use axum::body::Body;
     use axum::http::{Request, StatusCode as HttpStatus};
     use std::sync::{Arc, Mutex};
-    use tower::util::ServiceExt; // <-- CORRIGÉ ici aussi !
+    use tower::util::ServiceExt;
 
     fn setup_test_storage() -> Arc<Mutex<BlobStorage>> {
         Arc::new(Mutex::new(BlobStorage::new("test_volume", "test-vol".to_string()).unwrap()))
