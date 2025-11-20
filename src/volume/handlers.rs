@@ -67,7 +67,7 @@ async fn put_blob(State(state): State<AppState>, Path(key): Path<String>, body: 
 
 /// GET /blobs/:key - Retrieve a blob
 async fn get_blob(State(state): State<AppState>, Path(key): Path<String>) -> Response {
-    let mut storage = state.storage.lock().unwrap(); // <-- CORRECTION ici
+    let mut storage = state.storage.lock().unwrap();
     match storage.get(&key) {
         Ok(Some(blob)) => (StatusCode::OK, Json(blob)).into_response(),
         Ok(None) => (
@@ -133,7 +133,9 @@ mod tests {
     use tower::util::ServiceExt;
 
     fn setup_test_storage() -> Arc<Mutex<BlobStorage>> {
-        Arc::new(Mutex::new(BlobStorage::new("test_volume", "test-vol".to_string()).unwrap()))
+        Arc::new(Mutex::new(
+            BlobStorage::new("test_volume", "test-vol".to_string()).unwrap(),
+        ))
     }
 
     #[tokio::test]
