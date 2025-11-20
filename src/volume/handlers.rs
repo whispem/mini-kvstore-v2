@@ -7,16 +7,29 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, post},
-    Json, Router, ServiceExt,
+    Json, Router,
 };
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
 
+/// Creates the router with all volume endpoints
+pub fn create_router(storage: Arc<Mutex<BlobStorage>>) -> Router {
+    let state = AppState { storage };
+
+    Router::new()
+        .route("/", get(health_check))
+        .route("/health", get(health_check))
+        .route("/blobs", get(list_blobs))
+        .route("/blobs/:key", post(put_blob))
+        .route("/blobs/:key", get(get_blob))
+        .route("/blobs/:key", delete(delete_blob))
+        .with_state(state)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::volume::storage::BlobStorage;
     use axum::body::Body;
     use axum::http::{Request, StatusCode as HttpStatus};
     use axum::ServiceExt;
@@ -33,16 +46,14 @@ mod tests {
         let storage = setup_test_storage();
         let app = create_router(storage);
 
-        let response = app
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
+        let response = app.oneshot(
+            Request::builder()
+                .uri("/health")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
 
         assert_eq!(response.status(), HttpStatus::OK);
     }
