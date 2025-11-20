@@ -1,4 +1,6 @@
 pub mod store;
+pub mod volume;
+
 pub use store::error::{Result, StoreError};
 pub use store::KVStore;
 
