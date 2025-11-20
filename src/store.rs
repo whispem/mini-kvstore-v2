@@ -5,6 +5,6 @@ pub mod error;
 mod index;
 mod record;
 mod segment;
-mod stats;
+pub mod stats;  
 
 pub use engine::KVStore;
