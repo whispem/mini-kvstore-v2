@@ -1,12 +1,7 @@
 //! Volume binary entrypoint
 
+use mini_kvstore_v2::volume::server::{start_volume_server, VolumeConfig};
 use std::net::SocketAddr;
-
-mod handlers;
-mod server;
-mod storage;
-
-use server::{start_volume_server, VolumeConfig};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
