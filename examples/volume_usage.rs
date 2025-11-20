@@ -7,16 +7,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a blob storage instance
     let mut storage = BlobStorage::new("example_volume_data", "example-vol".to_string())?;
-    println!("✓ Volume storage initialized (volume_id: {})", storage.volume_id());
+    println!(
+        "✓ Volume storage initialized (volume_id: {})",
+        storage.volume_id()
+    );
 
     // Store some blobs
     let meta1 = storage.put("user:alice:avatar", b"<binary image data>")?;
-    println!("✓ Stored blob: key={}, etag={}, size={} bytes", 
-             meta1.key, meta1.etag, meta1.size);
+    println!(
+        "✓ Stored blob: key={}, etag={}, size={} bytes",
+        meta1.key, meta1.etag, meta1.size
+    );
 
     let meta2 = storage.put("user:bob:profile", b"{\"name\": \"Bob\", \"age\": 30}")?;
-    println!("✓ Stored blob: key={}, etag={}, size={} bytes", 
-             meta2.key, meta2.etag, meta2.size);
+    println!(
+        "✓ Stored blob: key={}, etag={}, size={} bytes",
+        meta2.key, meta2.etag, meta2.size
+    );
 
     // Retrieve a blob
     if let Some(data) = storage.get("user:bob:profile")? {
