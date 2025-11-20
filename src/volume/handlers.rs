@@ -1,6 +1,6 @@
 //! HTTP handlers for volume blob operations
 
-use crate::volume::storage::{BlobMeta, BlobStorage};
+use crate::volume::storage::BlobStorage;  
 use axum::{
     body::Bytes,
     extract::{Path, State},
