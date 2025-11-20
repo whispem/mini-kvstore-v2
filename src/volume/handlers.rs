@@ -6,8 +6,8 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json, Router,
     routing::{delete, get, post},
+    Json, Router,
 };
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
@@ -51,11 +51,7 @@ async fn health_check(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 /// PUT /blobs/:key - Store a blob
-async fn put_blob(
-    State(state): State<AppState>,
-    Path(key): Path<String>,
-    body: Bytes,
-) -> Response {
+async fn put_blob(State(state): State<AppState>, Path(key): Path<String>, body: Bytes) -> Response {
     let mut storage = state.storage.lock().unwrap();
 
     match storage.put(&key, &body) {
@@ -70,10 +66,7 @@ async fn put_blob(
 }
 
 /// GET /blobs/:key - Retrieve a blob
-async fn get_blob(
-    State(state): State<AppState>,
-    Path(key): Path<String>,
-) -> Response {
+async fn get_blob(State(state): State<AppState>, Path(key): Path<String>) -> Response {
     let mut storage = state.storage.lock().unwrap();
 
     match storage.get(&key) {
@@ -94,10 +87,7 @@ async fn get_blob(
 }
 
 /// DELETE /blobs/:key - Delete a blob
-async fn delete_blob(
-    State(state): State<AppState>,
-    Path(key): Path<String>,
-) -> Response {
+async fn delete_blob(State(state): State<AppState>, Path(key): Path<String>) -> Response {
     let mut storage = state.storage.lock().unwrap();
 
     match storage.delete(&key) {
@@ -164,7 +154,12 @@ mod tests {
         let app = create_router(storage);
 
         let response = app
-            .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
 
