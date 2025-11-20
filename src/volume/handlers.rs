@@ -130,7 +130,7 @@ mod tests {
     use axum::body::Body;
     use axum::http::{Request, StatusCode as HttpStatus};
     use std::sync::{Arc, Mutex};
-    use tower::util::ServiceExt;
+    use axum::ServiceExt; // <-- LA bonne import
 
     fn setup_test_storage() -> Arc<Mutex<BlobStorage>> {
         Arc::new(Mutex::new(
