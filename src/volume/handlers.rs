@@ -61,7 +61,7 @@ async fn put_blob(State(state): State<AppState>, Path(key): Path<String>, body: 
                 error: e.to_string(),
             }),
         )
-        .into_response(),
+            .into_response(),
     }
 }
 
@@ -76,14 +76,14 @@ async fn get_blob(State(state): State<AppState>, Path(key): Path<String>) -> Res
                 error: "Blob not found".to_string(),
             }),
         )
-        .into_response(),
+            .into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ErrorResponse {
                 error: e.to_string(),
             }),
         )
-        .into_response(),
+            .into_response(),
     }
 }
 
@@ -98,7 +98,7 @@ async fn delete_blob(State(state): State<AppState>, Path(key): Path<String>) -> 
                 error: e.to_string(),
             }),
         )
-        .into_response(),
+            .into_response(),
     }
 }
 
