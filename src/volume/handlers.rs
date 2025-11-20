@@ -133,14 +133,15 @@ mod tests {
         let storage = setup_test_storage();
         let app = create_router(storage);
 
-        let response = app.oneshot(
-            Request::builder()
-                .uri("/health")
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
 
         assert_eq!(response.status(), HttpStatus::OK);
     }
