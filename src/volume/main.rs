@@ -7,8 +7,8 @@ use std::net::SocketAddr;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse configuration from environment variables
     let volume_id = std::env::var("VOLUME_ID").unwrap_or_else(|_| "vol-1".to_string());
-    let data_dir = std::env::var("DATA_DIR")
-        .unwrap_or_else(|_| format!("volume_data_{}", volume_id));
+    let data_dir =
+        std::env::var("DATA_DIR").unwrap_or_else(|_| format!("volume_data_{}", volume_id));
     let port: u16 = std::env::var("PORT")
         .unwrap_or_else(|_| "9002".to_string())
         .parse()
