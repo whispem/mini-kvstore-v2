@@ -18,13 +18,11 @@ pub struct AppState {
     pub storage: Arc<Mutex<BlobStorage>>,
 }
 
-/// Error response structure
 #[derive(Serialize)]
 struct ErrorResponse {
     error: String,
 }
 
-/// Health check response
 #[derive(Serialize)]
 struct HealthResponse {
     status: String,
@@ -34,7 +32,6 @@ struct HealthResponse {
     total_mb: f64,
 }
 
-/// Root handler - health check
 async fn health_check(State(state): State<AppState>) -> impl IntoResponse {
     let storage = state.storage.lock().unwrap();
     let stats = storage.stats();
@@ -50,7 +47,6 @@ async fn health_check(State(state): State<AppState>) -> impl IntoResponse {
     (StatusCode::OK, Json(response))
 }
 
-/// PUT /blobs/:key - Store a blob
 async fn put_blob(State(state): State<AppState>, Path(key): Path<String>, body: Bytes) -> Response {
     let mut storage = state.storage.lock().unwrap();
     match storage.put(&key, &body) {
@@ -65,7 +61,6 @@ async fn put_blob(State(state): State<AppState>, Path(key): Path<String>, body: 
     }
 }
 
-/// GET /blobs/:key - Retrieve a blob
 async fn get_blob(State(state): State<AppState>, Path(key): Path<String>) -> Response {
     let mut storage = state.storage.lock().unwrap();
     match storage.get(&key) {
@@ -87,7 +82,6 @@ async fn get_blob(State(state): State<AppState>, Path(key): Path<String>) -> Res
     }
 }
 
-/// DELETE /blobs/:key - Delete a blob
 async fn delete_blob(State(state): State<AppState>, Path(key): Path<String>) -> Response {
     let mut storage = state.storage.lock().unwrap();
     match storage.delete(&key) {
@@ -102,17 +96,14 @@ async fn delete_blob(State(state): State<AppState>, Path(key): Path<String>) -> 
     }
 }
 
-/// GET /blobs - List all keys
 async fn list_blobs(State(state): State<AppState>) -> impl IntoResponse {
     let storage = state.storage.lock().unwrap();
     let keys = storage.list_keys();
     (StatusCode::OK, Json(keys))
 }
 
-/// Creates the router with all volume endpoints
 pub fn create_router(storage: Arc<Mutex<BlobStorage>>) -> Router {
     let state = AppState { storage };
-
     Router::new()
         .route("/", get(health_check))
         .route("/health", get(health_check))
@@ -129,7 +120,7 @@ mod tests {
     use crate::volume::storage::BlobStorage;
     use axum::body::Body;
     use axum::http::{Request, StatusCode as HttpStatus};
-    use axum::ServiceExt;
+    use axum::service::ServiceExt;
     use std::sync::{Arc, Mutex};
 
     fn setup_test_storage() -> Arc<Mutex<BlobStorage>> {
@@ -162,7 +153,6 @@ mod tests {
         let storage = setup_test_storage();
         let app = create_router(storage);
 
-        // PUT
         let put_response = app
             .clone()
             .oneshot(
@@ -177,7 +167,6 @@ mod tests {
 
         assert_eq!(put_response.status(), HttpStatus::CREATED);
 
-        // GET
         let get_response = app
             .oneshot(
                 Request::builder()
