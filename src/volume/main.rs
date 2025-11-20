@@ -2,13 +2,11 @@
 
 use std::net::SocketAddr;
 
-#[path = "mod.rs"]
-mod volume;
+mod handlers;
+mod server;
+mod storage;
 
-#[path = "../store.rs"]
-mod store;
-
-use volume::server::{start_volume_server, VolumeConfig};
+use server::{start_volume_server, VolumeConfig};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
