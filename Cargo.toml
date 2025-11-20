@@ -13,7 +13,7 @@ anyhow = "1.0.100"
 ciborium = "0.2"
 ciborium-io = "0.2"
 ciborium-ll = "0.2"
-criterion = { version = "0.5.1", features = ["html_reports", "real_blackbox"] }
+criterion = { version = "0.5.1", features = ["html_reports"] } 
 walkdir = "2"
 same-file = "1"
 clap = { version = "4.5.53", features = ["derive"] }
@@ -93,7 +93,7 @@ smallvec = "1.15.1"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
-criterion = { version = "0.5.1", features = ["html_reports", "real_blackbox"] }
+criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [build-dependencies]
 serde = { version = "1.0", features = ["derive"] }
