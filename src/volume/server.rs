@@ -1,45 +1,46 @@
-//! Volume server startup and configuration
+//! Volume server startup and configuration.
 
 use crate::volume::{handlers, storage::BlobStorage};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-/// Volume server configuration
+/// Volume server configuration.
 #[derive(Debug, Clone)]
 pub struct VolumeConfig {
-    /// Unique volume identifier
+    /// Unique volume identifier.
     pub volume_id: String,
-    /// Data directory for blob storage
+    /// Data directory for blob storage.
     pub data_dir: PathBuf,
-    /// Server bind address
+    /// Server bind address.
     pub bind_addr: SocketAddr,
 }
 
 impl VolumeConfig {
-    /// Creates a new volume configuration with defaults
-    pub fn new(volume_id: String) -> Self {
+    /// Creates a new volume configuration with defaults.
+    pub fn new(volume_id: impl Into<String>) -> Self {
+        let volume_id = volume_id.into();
         VolumeConfig {
-            volume_id: volume_id.clone(),
             data_dir: PathBuf::from(format!("volume_data_{}", volume_id)),
+            volume_id,
             bind_addr: SocketAddr::from(([127, 0, 0, 1], 9002)),
         }
     }
 
-    /// Sets the data directory
+    /// Sets the data directory.
     pub fn with_data_dir(mut self, path: impl Into<PathBuf>) -> Self {
         self.data_dir = path.into();
         self
     }
 
-    /// Sets the bind address
+    /// Sets the bind address.
     pub fn with_bind_addr(mut self, addr: SocketAddr) -> Self {
         self.bind_addr = addr;
         self
     }
 }
 
-/// Starts the volume server with the given configuration
+/// Starts the volume server with the given configuration.
 ///
 /// # Arguments
 ///
@@ -53,7 +54,7 @@ impl VolumeConfig {
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     let config = VolumeConfig::new("vol-1".to_string())
+///     let config = VolumeConfig::new("vol-1")
 ///         .with_bind_addr(SocketAddr::from(([127, 0, 0, 1], 9002)));
 ///     
 ///     start_volume_server(config).await?;
