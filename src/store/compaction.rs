@@ -26,8 +26,8 @@ fn find_all_segments(dir: &std::path::Path) -> Result<Vec<std::path::PathBuf>> {
     for entry in fs::read_dir(dir)
         .map_err(|e| StoreError::CompactionFailed(format!("Failed to read directory: {}", e)))?
     {
-        let entry =
-            entry.map_err(|e| StoreError::CompactionFailed(format!("Failed to read entry: {}", e)))?;
+        let entry = entry
+            .map_err(|e| StoreError::CompactionFailed(format!("Failed to read entry: {}", e)))?;
         let path = entry.path();
 
         if let Some(name) = path.file_name() {
