@@ -1,4 +1,4 @@
-//! Blob storage wrapper around KVStore with metadata tracking
+//! Blob storage wrapper around KVStore with metadata tracking.
 
 use crate::store::error::Result as StoreResult;
 use crate::store::stats::StoreStats;
@@ -6,27 +6,27 @@ use crate::KVStore;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-/// Metadata for a stored blob
+/// Metadata for a stored blob.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlobMeta {
-    /// Unique key identifier
+    /// Unique key identifier.
     pub key: String,
-    /// Content hash (etag) for integrity checks
+    /// Content hash (etag) for integrity checks.
     pub etag: String,
-    /// Size in bytes
+    /// Size in bytes.
     pub size: u64,
-    /// Volume ID where this blob is stored
+    /// Volume ID where this blob is stored.
     pub volume_id: String,
 }
 
-/// Blob storage engine wrapping KVStore
+/// Blob storage engine wrapping KVStore.
 pub struct BlobStorage {
     store: KVStore,
     volume_id: String,
 }
 
 impl BlobStorage {
-    /// Creates a new BlobStorage instance
+    /// Creates a new BlobStorage instance.
     ///
     /// # Arguments
     ///
@@ -48,24 +48,12 @@ impl BlobStorage {
         Ok(BlobStorage { store, volume_id })
     }
 
-    /// Stores a blob and returns its metadata
+    /// Stores a blob and returns its metadata.
     ///
     /// # Arguments
     ///
     /// * `key` - Unique key for the blob
     /// * `data` - Blob data to store
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// # use mini_kvstore_v2::volume::BlobStorage;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let mut storage = BlobStorage::new("volume_data", "vol-1".to_string())?;
-    /// let meta = storage.put("my-key", b"my data")?;
-    /// println!("Stored blob with etag: {}", meta.etag);
-    /// # Ok(())
-    /// # }
-    /// ```
     pub fn put(&mut self, key: &str, data: &[u8]) -> StoreResult<BlobMeta> {
         // Calculate etag (CRC32 hash of content)
         let etag = format!("{:08x}", crc32fast::hash(data));
@@ -81,31 +69,31 @@ impl BlobStorage {
         })
     }
 
-    /// Retrieves a blob by key
+    /// Retrieves a blob by key.
     ///
-    /// Returns `Ok(Some(data))` if found, `Ok(None)` if not found
+    /// Returns `Ok(Some(data))` if found, `Ok(None)` if not found.
     pub fn get(&mut self, key: &str) -> StoreResult<Option<Vec<u8>>> {
         self.store.get(key)
     }
 
-    /// Deletes a blob by key
+    /// Deletes a blob by key.
     ///
-    /// This operation is idempotent - deleting a non-existent key succeeds
+    /// This operation is idempotent - deleting a non-existent key succeeds.
     pub fn delete(&mut self, key: &str) -> StoreResult<()> {
         self.store.delete(key)
     }
 
-    /// Lists all blob keys in storage
+    /// Lists all blob keys in storage.
     pub fn list_keys(&self) -> Vec<String> {
         self.store.list_keys()
     }
 
-    /// Returns the volume ID
+    /// Returns the volume ID.
     pub fn volume_id(&self) -> &str {
         &self.volume_id
     }
 
-    /// Returns storage statistics
+    /// Returns storage statistics.
     pub fn stats(&self) -> StoreStats {
         self.store.stats()
     }
