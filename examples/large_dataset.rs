@@ -1,3 +1,5 @@
+//! Large dataset example demonstrating performance with many keys.
+
 use mini_kvstore_v2::KVStore;
 use std::time::Instant;
 
