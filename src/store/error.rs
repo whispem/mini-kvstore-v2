@@ -8,8 +8,11 @@ pub enum StoreError {
     #[error("Key not found")]
     KeyNotFound,
 
-    #[error("Corrupted data")]
-    CorruptedData,
+    #[error("Corrupted data: {0}")]
+    CorruptedData(String),
+
+    #[error("Compaction failed: {0}")]
+    CompactionFailed(String),
 }
 
 pub type Result<T> = std::result::Result<T, StoreError>;
