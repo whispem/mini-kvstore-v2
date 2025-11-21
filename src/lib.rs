@@ -1,7 +1,48 @@
+//! # mini-kvstore-v2
+//!
+//! A segmented, append-only key-value store implemented in Rust.
+//!
+//! ## Features
+//!
+//! - **Segmented append-only log**: Durable writes with automatic segment rotation
+//! - **In-memory index**: Fast key lookups via HashMap
+//! - **CRC32 checksums**: Data integrity validation on every record
+//! - **Manual compaction**: Reclaim space from deleted/overwritten keys
+//! - **Persistence**: Automatic index rebuild on restart
+//!
+//! ## Quick Start
+//!
+//! ```no_run
+//! use mini_kvstore_v2::KVStore;
+//!
+//! fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     let mut store = KVStore::open("my_data")?;
+//!
+//!     // Write data
+//!     store.set("user:1", b"Alice")?;
+//!     store.set("user:2", b"Bob")?;
+//!
+//!     // Read data
+//!     if let Some(value) = store.get("user:1")? {
+//!         println!("User 1: {}", String::from_utf8_lossy(&value));
+//!     }
+//!
+//!     // Delete data
+//!     store.delete("user:2")?;
+//!
+//!     // Reclaim space
+//!     store.compact()?;
+//!
+//!     Ok(())
+//! }
+//! ```
+
 pub mod store;
 pub mod volume;
 
+pub use store::config::StoreConfig;
 pub use store::error::{Result, StoreError};
+pub use store::stats::StoreStats;
 pub use store::KVStore;
 
 #[cfg(test)]
@@ -177,12 +218,12 @@ mod tests {
         let mut store = KVStore::open(test_dir).unwrap();
 
         store.set("english", "value".as_bytes()).unwrap();
-        store.set("key_with_emoji", "data".as_bytes()).unwrap();
+        store.set("emoji_key", "🎉".as_bytes()).unwrap();
 
         assert_eq!(store.get("english").unwrap(), Some(b"value".to_vec()));
         assert_eq!(
-            store.get("key_with_emoji").unwrap(),
-            Some("data".as_bytes().to_vec())
+            store.get("emoji_key").unwrap(),
+            Some("🎉".as_bytes().to_vec())
         );
 
         cleanup_test_dir(test_dir);
