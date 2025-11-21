@@ -85,8 +85,7 @@ fn segment_file_paths(dir: &Path) -> Result<Vec<PathBuf>> {
         if path
             .file_name()
             .map(|n| {
-                n.to_string_lossy().starts_with("segment-")
-                    && n.to_string_lossy().ends_with(".dat")
+                n.to_string_lossy().starts_with("segment-") && n.to_string_lossy().ends_with(".dat")
             })
             .unwrap_or(false)
         {
@@ -109,9 +108,7 @@ fn next_segment_id(dir: &Path) -> Result<usize> {
         if let Some(name) = path.file_name() {
             let name = name.to_string_lossy();
             if name.starts_with("segment-") && name.ends_with(".dat") {
-                if let Ok(id) =
-                    name["segment-".len()..name.len() - ".dat".len()].parse::<usize>()
-                {
+                if let Ok(id) = name["segment-".len()..name.len() - ".dat".len()].parse::<usize>() {
                     ids.insert(id);
                 }
             }
