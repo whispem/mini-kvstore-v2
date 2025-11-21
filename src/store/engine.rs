@@ -13,7 +13,7 @@ pub struct KVStore {
     pub base_dir: PathBuf,
     /// In-memory index (key, segment, offset, length)
     index: HashMap<String, (usize, u64, u64)>,
-    // TODO: Add other required fields for full implementation.
+    // TODO: Add required fields for full implementation.
 }
 
 impl KVStore {
@@ -27,7 +27,6 @@ impl KVStore {
         Ok(Self {
             base_dir,
             index: HashMap::new(),
-            // TODO: Initialize other fields if necessary.
         })
     }
 
@@ -41,8 +40,7 @@ impl KVStore {
         self.index.keys().cloned().collect()
     }
 
-    /// Fetches the value for a specific key.
-    /// (For demonstration, returns an empty Vec).
+    /// Fetches the value for a specific key. (Stub)
     pub fn get(&self, key: &str) -> Result<Option<Vec<u8>>> {
         if let Some((_segment, _offset, _len)) = self.index.get(key) {
             Ok(Some(Vec::new()))
