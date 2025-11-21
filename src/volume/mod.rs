@@ -1,3 +1,5 @@
-// mini-kvstore-v2/src/volume/mod.rs
-// Re-export the server module from lib.rs
-pub use crate::volume::server;
+pub mod storage;
+pub mod server;
+pub mod handlers;
+
+pub use storage::BlobStorage;
