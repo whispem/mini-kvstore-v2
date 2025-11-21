@@ -22,7 +22,8 @@ fn compaction_after_many_updates() {
     for i in 0..100 {
         let key = format!("key_{}", i);
         let expected = format!("value_{}_4", i); // Last round value
-        assert_eq!(store.get(&key), Some(expected.as_bytes().to_vec()));
+        assert_eq!(store.get(&key).unwrap(), Some(expected.as_bytes().to_vec()));
+
     }
 
     let stats = store.stats();
