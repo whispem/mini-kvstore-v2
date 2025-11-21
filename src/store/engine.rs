@@ -3,7 +3,7 @@ use crate::store::stats::StoreStats;
 use crate::store::error::{StoreError, Result};
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
-use std::io::{BufReader, BufWriter, Read, Write, Seek, SeekFrom};
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 
 const SEGMENT_PREFIX: &str = "segment-";
@@ -227,7 +227,7 @@ impl KVStore {
                 })
                 .count(),
             Err(_) => 0,
-        } as u64;
+        };
 
         StoreStats {
             num_keys: self.values.len(),
@@ -237,7 +237,7 @@ impl KVStore {
                 .values()
                 .map(|v| v.len() as u64)
                 .sum::<u64>(),
-            active_segment_id: self.active_segment_id,
+            active_segment_id: self.active_segment_id as usize,
             oldest_segment_id: 0, // could be improved by reading min id
         }
     }
