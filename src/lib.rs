@@ -148,7 +148,7 @@ mod tests {
 
         let store = KVStore::open(test_dir).unwrap();
 
-        // Write multiple versions of the same keys
+        // Write multiple versions of the same key
         for i in 0..10 {
             store.set("key1", format!("value{}", i).as_bytes()).unwrap();
             store.set("key2", format!("value{}", i).as_bytes()).unwrap();
@@ -156,7 +156,7 @@ mod tests {
 
         let _ = store.compact();
 
-        // Verify data is still correct after compaction
+        // Check value after compaction
         assert_eq!(store.get("key1").unwrap(), Some(b"value9".to_vec()));
         assert_eq!(store.get("key2").unwrap(), Some(b"value9".to_vec()));
 
@@ -168,13 +168,12 @@ mod tests {
         let test_dir = "tests_data/unit_persistence";
         setup_test_dir(test_dir);
 
-        // Write data
+        // Write data then close
         {
             let store = KVStore::open(test_dir).unwrap();
             store.set("persistent", b"data").unwrap();
         }
-
-        // Reopen and verify
+        // Reopen and confirm persistence
         {
             let store = KVStore::open(test_dir).unwrap();
             assert_eq!(store.get("persistent").unwrap(), Some(b"data".to_vec()));
