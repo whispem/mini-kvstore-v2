@@ -1,3 +1,5 @@
+//! Persistence example demonstrating data durability across restarts.
+
 use mini_kvstore_v2::KVStore;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,25 +29,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Verify data persisted from session 1
         let session = store.get("session")?;
-        assert_eq!(
-            session,
-            Some(b"first".to_vec()),
-            "Session value should persist"
-        );
+        assert_eq!(session, Some(b"first".to_vec()), "Session value should persist");
 
         let counter = store.get("counter")?;
-        assert_eq!(
-            counter,
-            Some(b"42".to_vec()),
-            "Counter value should persist"
-        );
+        assert_eq!(counter, Some(b"42".to_vec()), "Counter value should persist");
 
         let name = store.get("name")?;
-        assert_eq!(
-            name,
-            Some(b"Test Store".to_vec()),
-            "Name value should persist"
-        );
+        assert_eq!(name, Some(b"Test Store".to_vec()), "Name value should persist");
 
         println!("✓ All data persisted correctly from session 1");
 
