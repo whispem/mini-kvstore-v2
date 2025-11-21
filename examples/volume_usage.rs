@@ -1,6 +1,6 @@
 //! Example: Using the Volume storage programmatically.
 
-use mini-kvstore-v2::volume::BlobStorage;
+use mini_kvstore_v2::volume::BlobStorage;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Volume Storage Example ===\n");
