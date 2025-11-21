@@ -1,0 +1,56 @@
+# Clippy configuration for mini-kvstore-v2
+
+# Warn on missing documentation for public items
+# Uncomment to enforce docs on all public items
+# missing-docs-in-public-items = "warn"
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 30
+
+# Type complexity threshold  
+type-complexity-threshold = 250
+
+# Single char binding names threshold
+single-char-binding-names-threshold = 4
+
+# Too many arguments threshold
+too-many-arguments-threshold = 7
+
+# Too many lines threshold
+too-many-lines-threshold = 200
+
+# Large error types threshold (in bytes)
+enum-variant-size-threshold = 200
+
+# Verbose bit mask threshold
+verbose-bit-mask-threshold = 1
+
+# Literal representation threshold
+literal-representation-threshold = 10
+
+# Trivially copy pass by value size limit
+trivial-copy-size-limit = 128
+
+# Pass by value size limit  
+pass-by-value-size-limit = 256
+
+# Too large for stack threshold
+too-large-for-stack = 200
+
+# Array size threshold
+array-size-threshold = 512000
+
+# Vec box size threshold
+vec-box-size-threshold = 4096
+
+# Max suggested slice pattern length
+max-suggested-slice-pattern-length = 3
+
+# Allowed duplicate crates
+# avoid-breaking-exported-api = true
+
+# Disallowed names
+disallowed-names = ["foo", "bar", "baz"]
+
+# Allow uppercase acronyms in type names
+# upper-case-acronyms-aggressive = false
