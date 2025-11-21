@@ -1,4 +1,4 @@
-use mini_kvstore_v2::{KVStore, StoreStats};
+use mini_kvstore_v2::KVStore;
 use std::io::{self, Write};
 
 fn main() {
@@ -29,7 +29,7 @@ fn main() {
                     Ok(()) => println!("OK"),
                     Err(e) => println!("Error: {}", e),
                 }
-            }
+            },
 
             "get" => {
                 let key = parts.next().unwrap_or("");
@@ -39,7 +39,7 @@ fn main() {
                     Ok(None) => println!("Key not found"),
                     Err(e) => println!("Error: {}", e),
                 }
-            }
+            },
 
             "delete" => {
                 let key = parts.next().unwrap_or("");
@@ -47,13 +47,13 @@ fn main() {
                     Ok(()) => println!("Deleted"),
                     Err(e) => println!("Error: {}", e),
                 }
-            }
+            },
 
             "list" => {
                 for key in kv.list_keys() {
                     println!("  {}", key);
                 }
-            }
+            },
 
             "compact" => match kv.compact() {
                 Ok(()) => println!("Compaction finished"),

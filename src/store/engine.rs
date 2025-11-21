@@ -1,6 +1,6 @@
 // mini-kvstore-v2/src/store/engine.rs
+use crate::store::error::{Result, StoreError};
 use crate::store::stats::StoreStats;
-use crate::store::error::{StoreError, Result};
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufReader, BufWriter, Read, Write};
@@ -24,16 +24,20 @@ impl KVStore {
     pub fn open<P: AsRef<Path>>(dir: P) -> Result<Self> {
         let base_dir = dir.as_ref().to_path_buf();
         if !base_dir.exists() {
-            fs::create_dir_all(&base_dir).map_err(|e| StoreError::Io(e))?;
+            fs::create_dir_all(&base_dir).map_err(StoreError::Io)?;
         }
 
         // 1) find existing segment files
         let mut segment_paths: Vec<(u64, PathBuf)> = Vec::new();
         for entry in fs::read_dir(&base_dir).map_err(|e| {
-            StoreError::Io(std::io::Error::new(std::io::ErrorKind::Other, format!("read_dir: {}", e)))
+            StoreError::Io(std::io::Error::other(
+                format!("read_dir: {}", e),
+            ))
         })? {
             let entry = entry.map_err(|e| {
-                StoreError::Io(std::io::Error::new(std::io::ErrorKind::Other, format!("read_dir entry: {}", e)))
+                StoreError::Io(std::io::Error::other(
+                    format!("read_dir entry: {}", e),
+                ))
             })?;
             let path = entry.path();
             if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
@@ -85,7 +89,7 @@ impl KVStore {
         loop {
             // Read opcode (1 byte)
             let mut op_buf = [0u8; 1];
-            if let Err(_) = reader.read_exact(&mut op_buf) {
+            if reader.read_exact(&mut op_buf).is_err() {
                 // EOF -> done
                 break;
             }
@@ -94,14 +98,22 @@ impl KVStore {
             // Read key length (u32 LE)
             let mut len_buf = [0u8; 4];
             reader.read_exact(&mut len_buf).map_err(|e| {
-                StoreError::CorruptedData(format!("Failed to read key length in {}: {}", path.display(), e))
+                StoreError::CorruptedData(format!(
+                    "Failed to read key length in {}: {}",
+                    path.display(),
+                    e
+                ))
             })?;
             let key_len = u32::from_le_bytes(len_buf) as usize;
 
             // Read key bytes
             let mut key_bytes = vec![0u8; key_len];
             reader.read_exact(&mut key_bytes).map_err(|e| {
-                StoreError::CorruptedData(format!("Failed to read key in {}: {}", path.display(), e))
+                StoreError::CorruptedData(format!(
+                    "Failed to read key in {}: {}",
+                    path.display(),
+                    e
+                ))
             })?;
             let key = String::from_utf8(key_bytes).map_err(|e| {
                 StoreError::CorruptedData(format!("Invalid UTF-8 key in {}: {}", path.display(), e))
@@ -111,26 +123,34 @@ impl KVStore {
                 0 => {
                     // set: read value length and bytes
                     reader.read_exact(&mut len_buf).map_err(|e| {
-                        StoreError::CorruptedData(format!("Failed to read val len in {}: {}", path.display(), e))
+                        StoreError::CorruptedData(format!(
+                            "Failed to read val len in {}: {}",
+                            path.display(),
+                            e
+                        ))
                     })?;
                     let val_len = u32::from_le_bytes(len_buf) as usize;
                     let mut val_bytes = vec![0u8; val_len];
                     reader.read_exact(&mut val_bytes).map_err(|e| {
-                        StoreError::CorruptedData(format!("Failed to read val in {}: {}", path.display(), e))
+                        StoreError::CorruptedData(format!(
+                            "Failed to read val in {}: {}",
+                            path.display(),
+                            e
+                        ))
                     })?;
                     values.insert(key, val_bytes);
-                }
+                },
                 1 => {
                     // delete
                     values.remove(&key);
-                }
+                },
                 other => {
                     return Err(StoreError::CorruptedData(format!(
                         "Unknown opcode {} in segment {}",
                         other,
                         path.display()
                     )));
-                }
+                },
             }
         }
 
@@ -141,7 +161,9 @@ impl KVStore {
     pub fn set(&mut self, key: &str, value: &[u8]) -> Result<()> {
         // write entry: op(1) = 0, key_len(u32), key, val_len(u32), val
         let writer = self.active_writer.as_mut().ok_or_else(|| {
-            StoreError::Io(std::io::Error::new(std::io::ErrorKind::Other, "Active writer missing"))
+            StoreError::Io(std::io::Error::other(
+                "Active writer missing",
+            ))
         })?;
 
         // Build buffers
@@ -164,7 +186,9 @@ impl KVStore {
     /// Append a delete operation to the active segment and update in-memory index.
     pub fn delete(&mut self, key: &str) -> Result<()> {
         let writer = self.active_writer.as_mut().ok_or_else(|| {
-            StoreError::Io(std::io::Error::new(std::io::ErrorKind::Other, "Active writer missing"))
+            StoreError::Io(std::io::Error::other(
+                "Active writer missing",
+            ))
         })?;
 
         let key_bytes = key.as_bytes();
@@ -194,11 +218,14 @@ impl KVStore {
 
         // increment id and create new file
         self.active_segment_id = self.active_segment_id.checked_add(1).ok_or_else(|| {
-            StoreError::Io(std::io::Error::new(std::io::ErrorKind::Other, "segment id overflow"))
+            StoreError::Io(std::io::Error::other(
+                "segment id overflow",
+            ))
         })?;
-        let path = self
-            .base_dir
-            .join(format!("{}{}{}", SEGMENT_PREFIX, self.active_segment_id, SEGMENT_SUFFIX));
+        let path = self.base_dir.join(format!(
+            "{}{}{}",
+            SEGMENT_PREFIX, self.active_segment_id, SEGMENT_SUFFIX
+        ));
         let file = OpenOptions::new()
             .create(true)
             .append(true)
@@ -232,11 +259,7 @@ impl KVStore {
         StoreStats {
             num_keys: self.values.len(),
             num_segments,
-            total_bytes: self
-                .values
-                .values()
-                .map(|v| v.len() as u64)
-                .sum::<u64>(),
+            total_bytes: self.values.values().map(|v| v.len() as u64).sum::<u64>(),
             active_segment_id: self.active_segment_id as usize,
             oldest_segment_id: 0, // could be improved by reading min id
         }

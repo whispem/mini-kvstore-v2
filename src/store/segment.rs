@@ -1,6 +1,6 @@
 //! Segment logic for mini-kvstore-v2.
 
-use crate::store::error::{Result, StoreError};
+use crate::store::error::Result;
 
 pub type SegmentReadResult = Result<Option<(String, Option<Vec<u8>>)>>;
 

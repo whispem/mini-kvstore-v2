@@ -63,7 +63,7 @@ async fn put_blob(State(state): State<AppState>, Path(key): Path<String>, body: 
 }
 
 async fn get_blob(State(state): State<AppState>, Path(key): Path<String>) -> Response {
-    let mut storage = state.storage.lock().unwrap();
+    let storage = state.storage.lock().unwrap();
     match storage.get(&key) {
         Ok(Some(data)) => (StatusCode::OK, data).into_response(),
         Ok(None) => (
