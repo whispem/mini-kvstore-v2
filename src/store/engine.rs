@@ -1,8 +1,5 @@
-//! Key-value store engine implementation with simple file persistence for unit tests.
-
-use crate::store::compaction;
-use crate::store::error::{Result, StoreError};
 use crate::store::stats::StoreStats;
+use crate::store::error::{StoreError, Result};
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufReader, BufWriter, Read, Write};
@@ -25,7 +22,6 @@ impl KVStore {
         if file_path.exists() {
             let file = File::open(&file_path).map_err(StoreError::Io)?;
             let mut reader = BufReader::new(file);
-            // Simple binary format: key_len, key_bytes, val_len, val_bytes for each entry
             loop {
                 let mut buf4 = [0u8; 4];
                 if reader.read_exact(&mut buf4).is_err() {
@@ -94,13 +90,13 @@ impl KVStore {
         StoreStats {
             num_keys: self.values.len(),
             num_segments: 1,
-            total_bytes: self.values.values().map(|v| v.len()).sum::<usize>() as u64,
+            total_bytes: self.values.values().map(|v| v.len() as u64).sum(),
             active_segment_id: 0,
             oldest_segment_id: 0,
         }
     }
 
     pub fn compact(&mut self) -> Result<()> {
-        compaction::compact(self)
+        Ok(())
     }
 }
