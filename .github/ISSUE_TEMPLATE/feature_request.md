@@ -23,10 +23,8 @@ A clear and concise description of any alternative solutions or features you've 
 Explain how this feature would be used and why it's valuable.
 
 **Example API (if applicable)**
-```rust
 // Show how you envision using this feature
 let result = store.new_feature("param")?;
-```
 
 **Additional context**
 Add any other context, screenshots, or examples about the feature request here.

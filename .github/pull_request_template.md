@@ -28,25 +28,19 @@ Fixes # (issue)
 
 Describe the tests you added or ran to verify your changes:
 
-```bash
 # Example test commands
 cargo test test_my_new_feature
 cargo bench bench_my_optimization
-```
 
 ## Performance impact
 
 If this PR affects performance, include benchmark results:
 
 **Before:**
-```
 test benchmark_write ... bench:   1,234 ns/iter (+/- 56)
-```
 
 **After:**
-```
 test benchmark_write ... bench:     987 ns/iter (+/- 34)
-```
 
 ## Screenshots (if applicable)
 

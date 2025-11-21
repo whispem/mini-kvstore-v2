@@ -89,13 +89,11 @@ Using `u64::MAX` as a tombstone marker felt elegant—it's a value that would ne
 - Used `unwrap()` everywhere instead of proper error handling
 
 **How I fixed them**:
-```rust
 // Before: panic on error
 let offset = self.file.seek(SeekFrom::End(0)).unwrap();
 
 // After: propagate errors
 let offset = self.file.seek(SeekFrom::End(0))?;
-```
 
 ### Week 3: Compaction, Testing, and Polish (Nov 10 - Nov 21)
 
@@ -182,7 +180,6 @@ Premature optimization would have been a mistake here.
 **Problem**: Used `unwrap()` everywhere, making debugging painful.
 
 **Solution**: Introduced custom error types with `thiserror`:
-```rust
 #[derive(Error, Debug)]
 pub enum StoreError {
     #[error("Active segment not found")]
@@ -194,7 +191,6 @@ pub enum StoreError {
     #[error(transparent)]
     Io(#[from] io::Error),
 }
-```
 
 Then used `anyhow` in the CLI for simpler error handling at the boundary.
 

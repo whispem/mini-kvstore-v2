@@ -21,9 +21,7 @@ A clear and concise description of what you expected to happen.
 What actually happened.
 
 **Logs/Error messages**
-```
 Paste relevant logs or error messages here
-```
 
 **Environment:**
  - OS: [e.g. macOS 14.6.1, Ubuntu 22.04]
@@ -32,18 +30,14 @@ Paste relevant logs or error messages here
  - Architecture: [e.g. x86_64, aarch64]
 
 **Configuration:**
-```bash
 # Paste your configuration (environment variables, command-line flags)
 PORT=8000 cargo run --release
-```
 
 **Data directory state:**
-```bash
 # Output of: ls -lh data/
 total 64M
 -rw-r--r-- 1 user user 32M Nov 21 10:00 segment-0000.dat
 -rw-r--r-- 1 user user 32M Nov 21 10:05 segment-0001.dat
-```
 
 **Additional context**
 Add any other context about the problem here.

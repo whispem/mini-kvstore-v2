@@ -50,7 +50,6 @@ To explore and teach storage engine fundamentals like segmented logs, in-memory 
 ---
 
 ## 🚀 Quick Start
-```bash
 # Clone
 git clone https://github.com/whispem/mini-kvstore-v2
 cd mini-kvstore-v2
@@ -60,10 +59,8 @@ cargo run --release
 
 # Run as HTTP server (Axum, REST)
 cargo run --release -- --volume data --id my-vol
-```
 
 ### REST API Examples
-```bash
 # Get health/stats
 curl http://localhost:8000/health
 
@@ -78,11 +75,9 @@ curl -X DELETE http://localhost:8000/blobs/user
 
 # List all blobs
 curl http://localhost:8000/blobs
-```
 
 ### CLI Session
 
-```
 > set name Alice
 OK
 > get name
@@ -96,7 +91,6 @@ Deleted
 > compact
 Compaction finished
 > quit
-```
 
 ---
 
@@ -104,7 +98,6 @@ Compaction finished
 
 ### Architecture
 
-```
 ┌─────────────┐
 │  CLI/API    │
 └──────┬──────┘
@@ -120,11 +113,9 @@ Compaction finished
 ┌──────▼──────────────┐
 │  Segment Files      │  segment-0000.dat, ...
 └─────────────────────┘
-```
 
 ### Example Programmatic Use
 
-```rust
 use mini_kvstore_v2::KVStore;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut store = KVStore::open("my_data")?;
@@ -132,7 +123,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let name = store.get("user:1:name")?;
     Ok(())
 }
-```
 
 ---
 
@@ -140,18 +130,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Segment File Layout
 
-```
 segment-NNNN.dat:
 | Record |
 | key_len | value_len | key | value |
 (Tombstone: value_len = u64::MAX)
-```
 
 ### Index Structure
 
-```rust
 HashMap<String, (usize, u64, u64)> // key → segment, offset, len
-```
 
 ---
 
@@ -178,7 +164,6 @@ HashMap<String, (usize, u64, u64)> // key → segment, offset, len
 
 ## 📂 Project Structure
 
-```
 mini-kvstore-v2/
 ├── src/
 │   ├── lib.rs              # API & tests
@@ -191,16 +176,13 @@ mini-kvstore-v2/
 ├── examples/
 ├── benches/
 ├── .github/workflows/ci.yml
-```
 
 ---
 
 ## 🧪 Testing & Benchmarking
 
-```bash
 cargo test --all --release
 cargo bench
-```
 
 ---
 
