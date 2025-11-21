@@ -1,46 +1,24 @@
-//! CLI binary for mini-kvstore-v2.
-
-use mini_kvstore_v2::store::error::Result;
-use mini_kvstore_v2::KVStore;
+// mini-kvstore-v2/src/main.rs
+use mini_kvstore_v2::{KVStore, Stats};
 use std::io::{self, Write};
 
-fn print_help() {
-    println!("Commands:");
-    println!("  set <key> <value>   — set or update a key");
-    println!("  get <key>           — get a value");
-    println!("  delete <key>        — delete a key");
-    println!("  list                — list all keys");
-    println!("  compact             — run manual compaction");
-    println!("  stats               — show store statistics");
-    println!("  help                — show this help");
-    println!("  quit / exit         — exit");
-}
+fn main() {
+    let mut kv = KVStore::open("db").expect("failed to open db");
 
-fn main() -> Result<()> {
-    let mut kv = KVStore::open("data")?;
-    println!("mini-kvstore-v2 — segmented log with checksums, compaction, and auto-rotation");
-    println!();
-    print_help();
-    println!();
+    println!("mini-kvstore-v2 (type help for instructions)");
 
-    let stdin = io::stdin();
     loop {
         print!("> ");
-        io::stdout().flush().ok();
-
-        let mut line = String::new();
-        if stdin.read_line(&mut line)? == 0 {
-            break; // EOF
-        }
-
-        let line = line.trim();
-        if line.is_empty() {
+        io::stdout().flush().unwrap();
+        let mut input = String::new();
+        if io::stdin().read_line(&mut input).is_err() {
             continue;
         }
-
-        let mut parts = line.splitn(3, ' ');
-        let cmd = parts.next().unwrap();
-
+        let mut parts = input.trim().splitn(3, ' ');
+        let cmd = match parts.next() {
+            Some(c) => c,
+            None => continue,
+        };
         match cmd {
             "set" => {
                 let key = match parts.next() {
@@ -48,78 +26,79 @@ fn main() -> Result<()> {
                     None => {
                         println!("Usage: set <key> <value>");
                         continue;
-                    }
+                    },
                 };
                 let value = match parts.next() {
                     Some(v) => v,
                     None => {
                         println!("Usage: set <key> <value>");
                         continue;
-                    }
+                    },
                 };
-
                 match kv.set(key, value.as_bytes()) {
                     Ok(()) => println!("OK"),
                     Err(e) => println!("Error: {}", e),
                 }
-            }
+            },
             "get" => {
                 let key = match parts.next() {
                     Some(k) => k,
                     None => {
                         println!("Usage: get <key>");
                         continue;
-                    }
+                    },
                 };
-
                 match kv.get(key) {
-                    Ok(Some(v)) => println!("{}", String::from_utf8_lossy(&v)),
-                    Ok(None) => println!("Key not found"),
-                    Err(e) => println!("Error: {}", e),
+                    Some(v) => println!("{}", String::from_utf8_lossy(&v)),
+                    None => println!("Key not found"),
                 }
-            }
+            },
             "delete" => {
                 let key = match parts.next() {
                     Some(k) => k,
                     None => {
                         println!("Usage: delete <key>");
                         continue;
-                    }
+                    },
                 };
-
                 match kv.delete(key) {
                     Ok(()) => println!("Deleted"),
                     Err(e) => println!("Error: {}", e),
                 }
-            }
+            },
             "list" => {
                 let keys = kv.list_keys();
                 if keys.is_empty() {
-                    println!("No keys in store");
+                    println!("No keys");
                 } else {
-                    println!("Keys ({}):", keys.len());
                     for key in keys {
                         println!("  {}", key);
                     }
                 }
-            }
+            },
             "compact" => match kv.compact() {
                 Ok(()) => println!("Compaction finished"),
                 Err(e) => println!("Compaction error: {}", e),
             },
             "stats" => {
                 let stats = kv.stats();
-                println!("{}", stats);
-            }
+                println!("{:?}", stats);
+            },
             "help" => print_help(),
             "quit" | "exit" => break,
-            other => println!(
-                "Unknown command: '{}'. Type 'help' for available commands.",
-                other
-            ),
+            other => println!("Unknown command: '{}'", other),
         }
     }
+}
 
-    println!("Goodbye.");
-    Ok(())
+fn print_help() {
+    println!("Available commands:");
+    println!("  set <key> <value>");
+    println!("  get <key>");
+    println!("  delete <key>");
+    println!("  list");
+    println!("  compact");
+    println!("  stats");
+    println!("  help");
+    println!("  quit / exit");
 }
