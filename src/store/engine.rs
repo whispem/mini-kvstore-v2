@@ -4,7 +4,7 @@ use crate::store::compaction;
 use crate::store::error::{Result, StoreError};
 use crate::store::stats::StoreStats;
 use std::collections::HashMap;
-use std::fs::{self, File, OpenOptions};
+use std::fs::{self, File};
 use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
