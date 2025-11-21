@@ -38,7 +38,8 @@ impl KVStore {
                 let val_len = u32::from_le_bytes(buf4) as usize;
                 let mut val_bytes = vec![0u8; val_len];
                 reader.read_exact(&mut val_bytes)?;
-                let key = String::from_utf8(key_bytes).map_err(|e| StoreError::Other(e.to_string()))?;
+                let key =
+                    String::from_utf8(key_bytes).map_err(|e| StoreError::Other(e.to_string()))?;
                 values.insert(key, val_bytes);
             }
         }
