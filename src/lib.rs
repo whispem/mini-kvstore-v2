@@ -20,7 +20,8 @@ mod tests {
         let test_dir = "tests_data/unit_utf8";
         setup_test_dir(test_dir);
 
-        let store = KVStore::open(test_dir).unwrap();
+
+        let mut store = KVStore::open(test_dir).unwrap();
 
         store.set("english", "value".as_bytes()).unwrap();
         store.set("emoji_key", "🎉".as_bytes()).unwrap();
@@ -39,7 +40,8 @@ mod tests {
         let test_dir = "tests_data/unit_basic_set_get";
         setup_test_dir(test_dir);
 
-        let store = KVStore::open(test_dir).unwrap();
+
+        let mut store = KVStore::open(test_dir).unwrap();
         store.set("hello", b"world").unwrap();
 
         assert_eq!(store.get("hello").unwrap(), Some(b"world".to_vec()));
@@ -52,7 +54,8 @@ mod tests {
         let test_dir = "tests_data/unit_overwrite";
         setup_test_dir(test_dir);
 
-        let store = KVStore::open(test_dir).unwrap();
+
+        let mut store = KVStore::open(test_dir).unwrap();
 
         store.set("key", b"value1").unwrap();
         store.set("key", b"value2").unwrap();
@@ -67,7 +70,8 @@ mod tests {
         let test_dir = "tests_data/unit_delete";
         setup_test_dir(test_dir);
 
-        let store = KVStore::open(test_dir).unwrap();
+
+        let mut store = KVStore::open(test_dir).unwrap();
 
         store.set("temp", b"data").unwrap();
         assert!(store.get("temp").unwrap().is_some());
@@ -83,6 +87,7 @@ mod tests {
         let test_dir = "tests_data/unit_missing_key";
         setup_test_dir(test_dir);
 
+
         let store = KVStore::open(test_dir).unwrap();
 
         assert_eq!(store.get("nonexistent").unwrap(), None);
@@ -95,7 +100,8 @@ mod tests {
         let test_dir = "tests_data/unit_list_keys";
         setup_test_dir(test_dir);
 
-        let store = KVStore::open(test_dir).unwrap();
+
+        let mut store = KVStore::open(test_dir).unwrap();
 
         store.set("a", b"1").unwrap();
         store.set("b", b"2").unwrap();
@@ -115,7 +121,8 @@ mod tests {
         let test_dir = "tests_data/unit_empty_value";
         setup_test_dir(test_dir);
 
-        let store = KVStore::open(test_dir).unwrap();
+
+        let mut store = KVStore::open(test_dir).unwrap();
 
         store.set("empty", b"").unwrap();
         assert_eq!(store.get("empty").unwrap(), Some(vec![]));
@@ -128,7 +135,8 @@ mod tests {
         let test_dir = "tests_data/unit_stats";
         setup_test_dir(test_dir);
 
-        let store = KVStore::open(test_dir).unwrap();
+
+        let mut store = KVStore::open(test_dir).unwrap();
 
         store.set("key1", b"value1").unwrap();
         store.set("key2", b"value2").unwrap();
@@ -146,7 +154,8 @@ mod tests {
         let test_dir = "tests_data/unit_compaction";
         setup_test_dir(test_dir);
 
-        let store = KVStore::open(test_dir).unwrap();
+        // Correction: ajout de mut
+        let mut store = KVStore::open(test_dir).unwrap();
 
         // Write multiple versions of the same key
         for i in 0..10 {
@@ -170,11 +179,13 @@ mod tests {
 
         // Write data then close
         {
-            let store = KVStore::open(test_dir).unwrap();
+            // Correction: ajout de mut
+            let mut store = KVStore::open(test_dir).unwrap();
             store.set("persistent", b"data").unwrap();
         }
         // Reopen and confirm persistence
         {
+     
             let store = KVStore::open(test_dir).unwrap();
             assert_eq!(store.get("persistent").unwrap(), Some(b"data".to_vec()));
         }
