@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
 //! Segment logic for mini-kvstore-v2.
 
 use crate::store::error::Result;

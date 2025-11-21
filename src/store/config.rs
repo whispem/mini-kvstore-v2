@@ -1,7 +1,9 @@
+#![allow(dead_code)]
 //! Store configuration options for mini-kvstore-v2.
 
 /// Policy for how fsync is handled. Controls data durability.
 #[derive(Debug, Default)]
+#[allow(dead_code)]
 pub enum FsyncPolicy {
     /// Fsync after every write for maximum safety.
     #[default]

@@ -29,15 +29,11 @@ impl KVStore {
 
         // 1) find existing segment files
         let mut segment_paths: Vec<(u64, PathBuf)> = Vec::new();
-        for entry in fs::read_dir(&base_dir).map_err(|e| {
-            StoreError::Io(std::io::Error::other(
-                format!("read_dir: {}", e),
-            ))
-        })? {
+        for entry in fs::read_dir(&base_dir)
+            .map_err(|e| StoreError::Io(std::io::Error::other(format!("read_dir: {}", e))))?
+        {
             let entry = entry.map_err(|e| {
-                StoreError::Io(std::io::Error::other(
-                    format!("read_dir entry: {}", e),
-                ))
+                StoreError::Io(std::io::Error::other(format!("read_dir entry: {}", e)))
             })?;
             let path = entry.path();
             if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
@@ -160,11 +156,10 @@ impl KVStore {
     /// Append a set operation to the active segment and update in-memory index.
     pub fn set(&mut self, key: &str, value: &[u8]) -> Result<()> {
         // write entry: op(1) = 0, key_len(u32), key, val_len(u32), val
-        let writer = self.active_writer.as_mut().ok_or_else(|| {
-            StoreError::Io(std::io::Error::other(
-                "Active writer missing",
-            ))
-        })?;
+        let writer = self
+            .active_writer
+            .as_mut()
+            .ok_or_else(|| StoreError::Io(std::io::Error::other("Active writer missing")))?;
 
         // Build buffers
         let key_bytes = key.as_bytes();
@@ -185,11 +180,10 @@ impl KVStore {
 
     /// Append a delete operation to the active segment and update in-memory index.
     pub fn delete(&mut self, key: &str) -> Result<()> {
-        let writer = self.active_writer.as_mut().ok_or_else(|| {
-            StoreError::Io(std::io::Error::other(
-                "Active writer missing",
-            ))
-        })?;
+        let writer = self
+            .active_writer
+            .as_mut()
+            .ok_or_else(|| StoreError::Io(std::io::Error::other("Active writer missing")))?;
 
         let key_bytes = key.as_bytes();
         let key_len = (key_bytes.len() as u32).to_le_bytes();
@@ -217,11 +211,10 @@ impl KVStore {
         self.active_writer = None;
 
         // increment id and create new file
-        self.active_segment_id = self.active_segment_id.checked_add(1).ok_or_else(|| {
-            StoreError::Io(std::io::Error::other(
-                "segment id overflow",
-            ))
-        })?;
+        self.active_segment_id = self
+            .active_segment_id
+            .checked_add(1)
+            .ok_or_else(|| StoreError::Io(std::io::Error::other("segment id overflow")))?;
         let path = self.base_dir.join(format!(
             "{}{}{}",
             SEGMENT_PREFIX, self.active_segment_id, SEGMENT_SUFFIX
