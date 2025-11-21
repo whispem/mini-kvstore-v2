@@ -40,7 +40,6 @@ impl Index {
     }
 }
 
-
 impl Default for Index {
     fn default() -> Self {
         Self::new()
