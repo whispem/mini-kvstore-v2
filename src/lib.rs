@@ -1,6 +1,12 @@
 //! Library root for mini-kvstore-v2.
 
 pub mod store;
+pub mod volume;
+
+// Re-export commonly used types at the crate root
+pub use store::engine::KVStore;
+pub use store::error::{Result, StoreError};
+pub use store::stats::StoreStats;
 
 #[cfg(test)]
 mod tests {
