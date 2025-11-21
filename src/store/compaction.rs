@@ -40,7 +40,7 @@ pub fn compact(store: &mut KVStore) -> Result<()> {
         StoreError::CompactionFailed(format!("Failed to create compacted segment: {}", e))
     })?;
 
-    // This helper uses standard Rust I/O; replace it with an actual serialization as desired.
+    // This helper uses standard Rust I/O; replace with real serialization if needed.
     for (key, value) in &live_data {
         use std::io::Write;
         writeln!(&mut seg_file, "{}:{}", key, String::from_utf8_lossy(value))
