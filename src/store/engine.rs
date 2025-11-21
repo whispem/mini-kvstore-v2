@@ -38,9 +38,9 @@ impl KVStore {
                 let val_len = u32::from_le_bytes(buf4) as usize;
                 let mut val_bytes = vec![0u8; val_len];
                 reader.read_exact(&mut val_bytes)?;
-                // .map_err corrige avec StoreError::Io : conversion vers io::Error
-                let key = String::from_utf8(key_bytes)
-                    .map_err(|e| StoreError::Io(std::io::Error::new(std::io::ErrorKind::InvalidData, e)))?;
+                let key = String::from_utf8(key_bytes).map_err(|e| {
+                    StoreError::Io(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+                })?;
                 values.insert(key, val_bytes);
             }
         }
