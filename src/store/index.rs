@@ -39,3 +39,10 @@ impl Index {
         self.map.clear();
     }
 }
+
+
+impl Default for Index {
+    fn default() -> Self {
+        Self::new()
+    }
+}
