@@ -1,17 +1,12 @@
-//! Storage engine module.
-//!
-//! This module contains the core KVStore implementation with:
-//! - Segmented append-only log storage
-//! - In-memory index for fast lookups
-//! - CRC32 checksums for data integrity
-//! - Manual compaction for space reclamation
+//! Store module root.
 
+pub mod engine;
 pub mod compaction;
 pub mod config;
-mod engine;
+pub mod index;
+pub mod segment;
 pub mod error;
-mod index;
-mod segment;
 pub mod stats;
 
+// Useful public re-export for ease of use
 pub use engine::KVStore;
