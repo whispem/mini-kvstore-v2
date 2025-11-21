@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  volume-1:
+    build: .
+    container_name: mini-kvstore-vol-1
+    ports:
+      - "8001:8000"
+    environment:
+      - PORT=8000
+      - VOLUME_ID=vol-1
+      - DATA_DIR=/data
+    volumes:
+      - vol1-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  volume-2:
+    build: .
+    container_name: mini-kvstore-vol-2
+    ports:
+      - "8002:8000"
+    environment:
+      - PORT=8000
+      - VOLUME_ID=vol-2
+      - DATA_DIR=/data
+    volumes:
+      - vol2-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  volume-3:
+    build: .
+    container_name: mini-kvstore-vol-3
+    ports:
+      - "8003:8000"
+    environment:
+      - PORT=8000
+      - VOLUME_ID=vol-3
+      - DATA_DIR=/data
+    volumes:
+      - vol3-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  vol1-data:
+  vol2-data:
+  vol3-data:
