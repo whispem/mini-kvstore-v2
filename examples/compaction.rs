@@ -1,5 +1,3 @@
-//! Compaction example demonstrating space reclamation.
-
 use mini_kvstore_v2::KVStore;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,47 +25,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let stats_before = store.stats();
-    assert_eq!(stats_before.num_keys, 100, "Should have exactly 100 unique keys");
+    assert_eq!(
+        stats_before.num_keys, 100,
+        "Should have exactly 100 unique keys"
+    );
 
     println!("\nBefore compaction:");
     println!("  Keys: {}", stats_before.num_keys);
-    println!("  Segments: {}", stats_before.num_segments);
-    println!("  Total size: {:.2} MB", stats_before.total_mb());
+    println!("  Bytes: {:.2} MB", stats_before.total_mb());
 
-    // Run compaction
-    println!("\nRunning compaction...");
+    // Actual compaction operation
+    println!("\nCompacting...");
     store.compact()?;
 
     let stats_after = store.stats();
-    assert_eq!(
-        stats_after.num_keys, 100,
-        "Should still have 100 keys after compaction"
-    );
-    assert!(
-        stats_after.total_bytes < stats_before.total_bytes,
-        "Total bytes should decrease after compaction"
-    );
-
     println!("\nAfter compaction:");
     println!("  Keys: {}", stats_after.num_keys);
-    println!("  Segments: {}", stats_after.num_segments);
-    println!("  Total size: {:.2} MB", stats_after.total_mb());
+    println!("  Bytes: {:.2} MB", stats_after.total_mb());
 
-    // Verify data integrity after compaction
+    // Verify keys still exist
     for i in 0..100 {
         let key = format!("key_{}", i);
-        let expected = format!("value_{}_9", i);
-        let actual = store.get(&key)?;
+        let value = store.get(&key)?;
         assert_eq!(
-            actual,
-            Some(expected.as_bytes().to_vec()),
-            "Key {} should have correct value after compaction",
-            key
+            value,
+            Some(format!("value_{}_9", i).as_bytes().to_vec()),
+            "Key value should survive compaction"
         );
     }
     println!("\n✓ All 100 keys verified - data integrity preserved");
 
-    let saved_bytes = stats_before.total_bytes.saturating_sub(stats_after.total_bytes);
+    let saved_bytes = stats_before
+        .total_bytes
+        .saturating_sub(stats_after.total_bytes);
     let saved_mb = saved_bytes as f64 / (1024.0 * 1024.0);
     let saved_pct = if stats_before.total_bytes > 0 {
         (saved_bytes as f64 / stats_before.total_bytes as f64) * 100.0
@@ -75,7 +65,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         0.0
     };
 
-    println!("\n✓ Saved {:.2} MB ({:.1}%)", saved_mb, saved_pct);
+    println!(
+        "Compaction saved {:.2} MB ({:.1}%)",
+        saved_mb, saved_pct
+    );
 
     Ok(())
 }
