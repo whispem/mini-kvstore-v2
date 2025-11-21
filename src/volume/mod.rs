@@ -1,2 +1,3 @@
 // mini-kvstore-v2/src/volume/mod.rs
-pub mod server;
+// Re-export the server module from lib.rs
+pub use crate::volume::server;
