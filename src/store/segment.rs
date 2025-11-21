@@ -1,15 +1,15 @@
-//! Represents a data segment for the KVStore.
-// All unused code and unused fields/methods are annotated for Clippy.
+//! Segment logic for mini-kvstore-v2.
+// Clippy warnings silenced (including type complexity).
+
+pub type SegmentReadResult = Result<Option<(String, Option<Vec<u8>>)>, std::io::Error>;
 
 #[allow(dead_code)]
 const SEGMENT_SIZE_LIMIT: u64 = 1024 * 1024;
 
 #[allow(dead_code)]
 pub struct Segment {
-    /// Path to the segment file.
     pub path: std::path::PathBuf,
-    /// Segment ID (may be unused).
-    pub id: usize,
+    pub id: usize, // Unused field allowed for Clippy
     // TODO: Add other fields if necessary.
 }
 
@@ -20,7 +20,6 @@ impl Segment {
         Ok(Segment {
             path: _dir.join(format!("segment-{:04}.dat", _id)),
             id: _id,
-            // TODO: Initialize other fields.
         })
     }
 
@@ -39,11 +38,8 @@ impl Segment {
         false
     }
 
-    /// Reads a key/value record at a given offset (stub).
-    pub fn read_record_at(
-        &mut self,
-        _offset: u64,
-    ) -> Result<Option<(String, Option<Vec<u8>>)>, std::io::Error> {
+    /// Reads a key/value record at the given offset (stub).
+    pub fn read_record_at(&mut self, _offset: u64) -> SegmentReadResult {
         Ok(None)
     }
 
