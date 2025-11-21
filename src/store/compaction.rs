@@ -5,21 +5,29 @@ use crate::store::KVStore;
 use std::fs;
 
 /// Performs manual compaction.
+/// Clears all old segments, then asks the KVStore to create a fresh one.
 pub fn compact(store: &mut KVStore) -> Result<()> {
-    // Clear all segments
     let volume_dir = store.base_dir();
     let segments = find_all_segments(&volume_dir)?;
 
     for seg_path in segments {
-        fs::remove_file(seg_path).map_err(|e| {
-            StoreError::CompactionFailed(format!("Failed to remove old segment: {}", e))
-        })?;
+        if let Err(e) = fs::remove_file(&seg_path) {
+            if e.kind() != std::io::ErrorKind::NotFound {
+                return Err(StoreError::CompactionFailed(format!(
+                    "Failed to remove old segment {}: {}",
+                    seg_path.display(),
+                    e
+                )));
+            }
+        }
     }
+
+    // Recreate a fresh active segment for further writes
+    store.reset_active_segment()?;
 
     Ok(())
 }
 
-/// Finds all segment file paths in a directory
 fn find_all_segments(dir: &std::path::Path) -> Result<Vec<std::path::PathBuf>> {
     let mut segments = Vec::new();
 
