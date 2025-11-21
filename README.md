@@ -1,5 +1,7 @@
 # Mini KV Store v2 🦀
 
+> 📚 **New!** Read about [my learning journey](JOURNEY.md) building this project
+
 A segmented, append-only key-value store implemented in Rust. **Now with:**
 - Async HTTP API (Axum, REST endpoints)
 - SVG and benchmarks (Plotters, Criterion)
@@ -48,7 +50,6 @@ To explore and teach storage engine fundamentals like segmented logs, in-memory 
 ---
 
 ## 🚀 Quick Start
-
 ```bash
 # Clone
 git clone https://github.com/whispem/mini-kvstore-v2
@@ -62,7 +63,6 @@ cargo run --release -- --volume data --id my-vol
 ```
 
 ### REST API Examples
-
 ```bash
 # Get health/stats
 curl http://localhost:8000/health
@@ -79,6 +79,8 @@ curl -X DELETE http://localhost:8000/blobs/user
 # List all blobs
 curl http://localhost:8000/blobs
 ```
+
+### CLI Session
 
 ### CLI Session
 
