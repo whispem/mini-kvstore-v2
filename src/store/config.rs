@@ -1,5 +1,4 @@
 //! Store configuration options for mini-kvstore-v2.
-//! All fields and methods annotated for Clippy compatibility.
 
 /// Policy for how fsync is handled. Controls data durability.
 #[derive(Debug, Default)]
@@ -14,7 +13,7 @@ pub enum FsyncPolicy {
 }
 
 impl FsyncPolicy {
-    /// Returns a human-readable description of the policy.
+    /// Returns a human-readable description.
     pub fn as_str(&self) -> &'static str {
         match self {
             FsyncPolicy::Always => "fsync after every write",
@@ -24,24 +23,16 @@ impl FsyncPolicy {
     }
 }
 
-/// Complete store configuration.
-/// Annotated to silence Clippy warnings for unused fields and dead code in examples/tests.
+/// Complete store configuration with typical options.
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct StoreConfig {
-    /// Fsync policy to use.
     pub fsync_policy: FsyncPolicy,
-    /// Maximum allowed segment size in bytes.
     pub max_segment_size: u64,
-    /// Enable record checksums.
     pub enable_checksums: bool,
-    /// Path for the store data.
     pub data_path: String,
-    /// Number of segments to keep in memory.
     pub cache_segments: usize,
-    /// Enable verbose logging of operations.
     pub verbose_logging: bool,
-    // TODO: add more options as needed for performance/tuning.
 }
 
 impl Default for StoreConfig {
@@ -58,7 +49,7 @@ impl Default for StoreConfig {
 }
 
 impl StoreConfig {
-    /// Returns a config suitable for testing that minimizes disk IO.
+    /// Returns a config suitable for tests.
     #[allow(dead_code)]
     pub fn test_config() -> Self {
         Self {
@@ -71,7 +62,7 @@ impl StoreConfig {
         }
     }
 
-    /// Display a summary for debugging/logging.
+    /// Display summary for debugging/logging.
     #[allow(dead_code)]
     pub fn summary(&self) -> String {
         format!(
