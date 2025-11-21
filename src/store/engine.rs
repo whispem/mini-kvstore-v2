@@ -5,7 +5,7 @@ use crate::store::error::{Result, StoreError};
 use crate::store::stats::StoreStats;
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, BufReader, BufWriter, Read, Seek, SeekFrom, Write};
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
@@ -38,8 +38,9 @@ impl KVStore {
                 let val_len = u32::from_le_bytes(buf4) as usize;
                 let mut val_bytes = vec![0u8; val_len];
                 reader.read_exact(&mut val_bytes)?;
-                let key =
-                    String::from_utf8(key_bytes).map_err(|e| StoreError::Other(e.to_string()))?;
+                // .map_err corrige avec StoreError::Io : conversion vers io::Error
+                let key = String::from_utf8(key_bytes)
+                    .map_err(|e| StoreError::Io(std::io::Error::new(std::io::ErrorKind::InvalidData, e)))?;
                 values.insert(key, val_bytes);
             }
         }
