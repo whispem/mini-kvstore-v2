@@ -2,9 +2,9 @@
 
 use super::error::{Result, StoreError};
 use crate::KVStore;
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::collections::HashSet;
 
 /// Performs manual compaction:
 /// - Rewrites only live key-value pairs to a new segment
@@ -36,8 +36,9 @@ pub fn compact(store: &mut KVStore) -> Result<()> {
 
     // Write live data to a new segment
     let seg_path = temp_dir.join("seg_compacted.dat");
-    let mut seg_file = fs::File::create(&seg_path)
-        .map_err(|e| StoreError::CompactionFailed(format!("Failed to create compacted segment: {}", e)))?;
+    let mut seg_file = fs::File::create(&seg_path).map_err(|e| {
+        StoreError::CompactionFailed(format!("Failed to create compacted segment: {}", e))
+    })?;
 
     for (key, value) in &live_data {
         // Use KVStore's volume logic to serialize
@@ -50,13 +51,15 @@ pub fn compact(store: &mut KVStore) -> Result<()> {
     // Move compacted segment back to volume directory
     let new_segment_id = next_segment_id(&volume_dir)?;
     let new_segment_path = volume_dir.join(format!("segment-{:04}.dat", new_segment_id));
-    fs::rename(&seg_path, &new_segment_path)
-        .map_err(|e| StoreError::CompactionFailed(format!("Failed to move compacted segment: {}", e)))?;
+    fs::rename(&seg_path, &new_segment_path).map_err(|e| {
+        StoreError::CompactionFailed(format!("Failed to move compacted segment: {}", e))
+    })?;
 
     // Delete old segments
     for seg in &segment_files {
-        fs::remove_file(seg)
-            .map_err(|e| StoreError::CompactionFailed(format!("Failed to remove old segment: {}", e)))?;
+        fs::remove_file(seg).map_err(|e| {
+            StoreError::CompactionFailed(format!("Failed to remove old segment: {}", e))
+        })?;
     }
 
     // Clean up temp dir
@@ -75,12 +78,16 @@ fn segment_file_paths(dir: &Path) -> Result<Vec<PathBuf>> {
     for entry in fs::read_dir(dir)
         .map_err(|e| StoreError::CompactionFailed(format!("Failed to list segments: {}", e)))?
     {
-        let entry = entry
-            .map_err(|e| StoreError::CompactionFailed(format!("Failed to read segment entry: {}", e)))?;
+        let entry = entry.map_err(|e| {
+            StoreError::CompactionFailed(format!("Failed to read segment entry: {}", e))
+        })?;
         let path = entry.path();
         if path
             .file_name()
-            .map(|n| n.to_string_lossy().starts_with("segment-") && n.to_string_lossy().ends_with(".dat"))
+            .map(|n| {
+                n.to_string_lossy().starts_with("segment-")
+                    && n.to_string_lossy().ends_with(".dat")
+            })
             .unwrap_or(false)
         {
             segments.push(path);
@@ -95,13 +102,16 @@ fn next_segment_id(dir: &Path) -> Result<usize> {
     for entry in fs::read_dir(dir)
         .map_err(|e| StoreError::CompactionFailed(format!("Failed to list segments: {}", e)))?
     {
-        let entry = entry
-            .map_err(|e| StoreError::CompactionFailed(format!("Failed to read segment entry: {}", e)))?;
+        let entry = entry.map_err(|e| {
+            StoreError::CompactionFailed(format!("Failed to read segment entry: {}", e))
+        })?;
         let path = entry.path();
         if let Some(name) = path.file_name() {
             let name = name.to_string_lossy();
             if name.starts_with("segment-") && name.ends_with(".dat") {
-                if let Ok(id) = name["segment-".len()..name.len() - ".dat".len()].parse::<usize>() {
+                if let Ok(id) =
+                    name["segment-".len()..name.len() - ".dat".len()].parse::<usize>()
+                {
                     ids.insert(id);
                 }
             }
