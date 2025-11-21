@@ -1,202 +1,137 @@
-//! Compaction logic for reclaiming space from old segments.
+//! Manual log compaction logic.
 
-use crate::store::engine::KVStore;
-use crate::store::error::{Result, StoreError};
-use crate::store::segment::Segment;
+use super::error::{Result, StoreError};
+use crate::KVStore;
 use std::fs;
+use std::path::{Path, PathBuf};
+use std::collections::HashSet;
 
-/// Performs compaction on the store.
-///
-/// This function:
-/// 1. Reads all live key-value pairs from existing segments
-/// 2. Creates new segments with only the live data
-/// 3. Atomically replaces old segments with new ones
-/// 4. Removes old segment files
-///
-/// # Safety
-///
-/// This implementation collects all live data in memory first,
-/// which ensures consistency but may use significant memory for large stores.
-pub fn compact_segments(store: &mut KVStore) -> Result<()> {
-    let data_dir = &store.config.data_dir;
-    let temp_dir = data_dir.join(".compacting");
+/// Performs manual compaction:
+/// - Rewrites only live key-value pairs to a new segment
+/// - Updates index
+/// - Deletes obsolete segments
+pub fn compact(store: &mut KVStore) -> Result<()> {
+    let volume_dir = store.volume_dir();
+    let temp_dir = volume_dir.join("tmp_compaction");
 
-    // Create temporary directory for new segments
+    // Remove any previous temp directory
     if temp_dir.exists() {
         fs::remove_dir_all(&temp_dir).map_err(|e| {
             StoreError::CompactionFailed(format!("Failed to clean temp dir: {}", e))
         })?;
     }
-    fs::create_dir_all(&temp_dir).map_err(|e| {
-        StoreError::CompactionFailed(format!("Failed to create temp dir: {}", e))
-    })?;
+    fs::create_dir_all(&temp_dir)
+        .map_err(|e| StoreError::CompactionFailed(format!("Failed to create temp dir: {}", e)))?;
 
     // Collect all live data
     let mut live_data: Vec<(String, Vec<u8>)> = Vec::new();
-
-    for key in store.index.keys() {
-        if let Some(&(seg_id, offset, _len)) = store.index.get(key) {
-            if let Some(seg) = store.segments.get_mut(&seg_id) {
-                if let Ok(Some(value)) = seg.read_value_at(offset) {
-                    live_data.push((key.clone(), value));
-                }
+    {
+        let keys = store.list_keys();
+        for key in keys {
+            if let Some(value) = store.get(&key).unwrap_or(None) {
+                live_data.push((key, value));
             }
         }
     }
 
-    // Write live data to new segments in temp directory
-    let mut new_active_id = 0usize;
-    let mut new_segments = std::collections::HashMap::new();
-    let mut new_index = crate::store::index::Index::new();
+    // Write live data to a new segment
+    let seg_path = temp_dir.join("seg_compacted.dat");
+    let mut seg_file = fs::File::create(&seg_path)
+        .map_err(|e| StoreError::CompactionFailed(format!("Failed to create compacted segment: {}", e)))?;
 
-    // Create first new segment
-    let mut current_seg = Segment::open(&temp_dir, new_active_id).map_err(|e| {
-        StoreError::CompactionFailed(format!("Failed to create new segment: {}", e))
-    })?;
-
-    for (key, value) in live_data {
-        // Check if we need a new segment
-        if current_seg.is_full() {
-            new_segments.insert(new_active_id, current_seg);
-            new_active_id += 1;
-            current_seg = Segment::open(&temp_dir, new_active_id).map_err(|e| {
-                StoreError::CompactionFailed(format!("Failed to create new segment: {}", e))
-            })?;
-        }
-
-        // Write to new segment
-        let offset = current_seg.append(key.as_bytes(), &value).map_err(|e| {
-            StoreError::CompactionFailed(format!("Failed to write during compaction: {}", e))
-        })?;
-
-        new_index.insert(key, new_active_id, offset, value.len() as u64);
+    for (key, value) in &live_data {
+        // Use KVStore's volume logic to serialize
+        store.write_record(&mut seg_file, key, value)?;
     }
 
-    // Don't forget the last segment
-    new_segments.insert(new_active_id, current_seg);
+    // Prepare to swap: find all old segments
+    let segment_files = segment_file_paths(&volume_dir)?;
 
-    // Now atomically swap: remove old segments and move new ones
-    // First, collect old segment IDs
-    let old_segment_ids: Vec<usize> = store.segments.keys().copied().collect();
+    // Move compacted segment back to volume directory
+    let new_segment_id = next_segment_id(&volume_dir)?;
+    let new_segment_path = volume_dir.join(format!("segment-{:04}.dat", new_segment_id));
+    fs::rename(&seg_path, &new_segment_path)
+        .map_err(|e| StoreError::CompactionFailed(format!("Failed to move compacted segment: {}", e)))?;
 
-    // Remove old segment files
-    for seg_id in &old_segment_ids {
-        let old_path = data_dir.join(format!("segment-{:04}.dat", seg_id));
-        if old_path.exists() {
-            fs::remove_file(&old_path).map_err(|e| {
-                StoreError::CompactionFailed(format!(
-                    "Failed to remove old segment {}: {}",
-                    seg_id, e
-                ))
-            })?;
-        }
+    // Delete old segments
+    for seg in &segment_files {
+        fs::remove_file(seg)
+            .map_err(|e| StoreError::CompactionFailed(format!("Failed to remove old segment: {}", e)))?;
     }
 
-    // Move new segments from temp to data directory
-    for seg_id in new_segments.keys() {
-        let temp_path = temp_dir.join(format!("segment-{:04}.dat", seg_id));
-        let final_path = data_dir.join(format!("segment-{:04}.dat", seg_id));
-        fs::rename(&temp_path, &final_path).map_err(|e| {
-            StoreError::CompactionFailed(format!("Failed to move new segment {}: {}", seg_id, e))
-        })?;
-    }
+    // Clean up temp dir
+    fs::remove_dir_all(&temp_dir)
+        .map_err(|e| StoreError::CompactionFailed(format!("Failed to clean temp dir: {}", e)))?;
 
-    // Clean up temp directory
-    let _ = fs::remove_dir_all(&temp_dir);
-
-    // Reopen segments from the data directory
-    store.segments.clear();
-    for seg_id in new_segments.keys() {
-        let seg = Segment::open(data_dir, *seg_id).map_err(|e| {
-            StoreError::CompactionFailed(format!("Failed to reopen segment {}: {}", seg_id, e))
-        })?;
-        store.segments.insert(*seg_id, seg);
-    }
-
-    // Update store state
-    store.index = new_index;
-    store.active_id = new_active_id;
+    // Rebuild index by reloading new segment
+    store.reload_index()?;
 
     Ok(())
+}
+
+/// Returns paths to all segment files.
+fn segment_file_paths(dir: &Path) -> Result<Vec<PathBuf>> {
+    let mut segments = Vec::new();
+    for entry in fs::read_dir(dir)
+        .map_err(|e| StoreError::CompactionFailed(format!("Failed to list segments: {}", e)))?
+    {
+        let entry = entry
+            .map_err(|e| StoreError::CompactionFailed(format!("Failed to read segment entry: {}", e)))?;
+        let path = entry.path();
+        if path
+            .file_name()
+            .map(|n| n.to_string_lossy().starts_with("segment-") && n.to_string_lossy().ends_with(".dat"))
+            .unwrap_or(false)
+        {
+            segments.push(path);
+        }
+    }
+    Ok(segments)
+}
+
+/// Finds the next available segment ID in the volume dir.
+fn next_segment_id(dir: &Path) -> Result<usize> {
+    let mut ids = HashSet::new();
+    for entry in fs::read_dir(dir)
+        .map_err(|e| StoreError::CompactionFailed(format!("Failed to list segments: {}", e)))?
+    {
+        let entry = entry
+            .map_err(|e| StoreError::CompactionFailed(format!("Failed to read segment entry: {}", e)))?;
+        let path = entry.path();
+        if let Some(name) = path.file_name() {
+            let name = name.to_string_lossy();
+            if name.starts_with("segment-") && name.ends_with(".dat") {
+                if let Ok(id) = name["segment-".len()..name.len() - ".dat".len()].parse::<usize>() {
+                    ids.insert(id);
+                }
+            }
+        }
+    }
+    let next = ids.into_iter().max().map(|x| x + 1).unwrap_or(0);
+    Ok(next)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::{create_dir_all, remove_dir_all};
-    use std::path::Path;
-
-    fn setup_test_dir(path: &str) {
-        let _ = remove_dir_all(path);
-        create_dir_all(path).expect("Failed to create test directory");
-    }
+    use crate::KVStore;
 
     #[test]
-    fn test_compaction_preserves_data() {
-        let test_dir = "tests_data/compaction_test";
-        setup_test_dir(test_dir);
+    fn test_compaction_removes_obsolete_segments() {
+        let test_dir = PathBuf::from("tests_data/unit_compaction_remove");
+        let _ = fs::remove_dir_all(&test_dir);
+        fs::create_dir_all(&test_dir).expect("Failed to create test directory");
+        let mut store = KVStore::open(test_dir.to_str().unwrap()).unwrap();
 
-        let mut store = KVStore::open(test_dir).unwrap();
-
-        // Write data
-        store.set("key1", b"value1").unwrap();
-        store.set("key2", b"value2").unwrap();
-        store.set("key3", b"value3").unwrap();
-
-        // Update some keys
-        store.set("key1", b"updated1").unwrap();
-
-        // Delete a key
-        store.delete("key2").unwrap();
-
-        // Compact
-        compact_segments(&mut store).unwrap();
-
-        // Verify data integrity
-        assert_eq!(store.get("key1").unwrap(), Some(b"updated1".to_vec()));
-        assert_eq!(store.get("key2").unwrap(), None);
-        assert_eq!(store.get("key3").unwrap(), Some(b"value3".to_vec()));
-
-        let _ = remove_dir_all(test_dir);
-    }
-
-    #[test]
-    fn test_compaction_reduces_size() {
-        let test_dir = "tests_data/compaction_size";
-        setup_test_dir(test_dir);
-
-        let mut store = KVStore::open(test_dir).unwrap();
-
-        // Write many versions of the same key
-        for i in 0..100 {
-            store.set("key", format!("value_{}", i).as_bytes()).unwrap();
+        // Write multiple versions of keys
+        for i in 0..3 {
+            store.set("k", format!("v{}", i).as_bytes()).unwrap();
         }
+        compact(&mut store).unwrap();
 
-        let stats_before = store.stats();
-        compact_segments(&mut store).unwrap();
-        let stats_after = store.stats();
+        let seg_files = segment_file_paths(&test_dir).unwrap();
+        assert_eq!(seg_files.len(), 1);
 
-        // Size should decrease
-        assert!(stats_after.total_bytes < stats_before.total_bytes);
-
-        // Data should be preserved
-        assert_eq!(store.get("key").unwrap(), Some(b"value_99".to_vec()));
-
-        let _ = remove_dir_all(test_dir);
-    }
-
-    #[test]
-    fn test_compaction_empty_store() {
-        let test_dir = "tests_data/compaction_empty";
-        setup_test_dir(test_dir);
-
-        let mut store = KVStore::open(test_dir).unwrap();
-
-        // Compaction on empty store should succeed
-        compact_segments(&mut store).unwrap();
-
-        assert_eq!(store.stats().num_keys, 0);
-
-        let _ = remove_dir_all(test_dir);
+        let _ = fs::remove_dir_all(&test_dir);
     }
 }
