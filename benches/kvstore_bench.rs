@@ -1,3 +1,5 @@
+//! Benchmarks for KVStore operations.
+
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use mini_kvstore_v2::KVStore;
 use std::fs::remove_dir_all;
