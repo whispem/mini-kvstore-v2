@@ -5,7 +5,7 @@ use crate::store::error::{Result, StoreError};
 use crate::store::stats::StoreStats;
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
@@ -77,56 +77,8 @@ impl KVStore {
         }
     }
 
-    /// Finds all segment IDs in the directory
-    fn find_segments(dir: &Path) -> Result<Vec<usize>> {
-        let mut segments = Vec::new();
-
-        if !dir.exists() {
-            return Ok(segments);
-        }
-
-        for entry in fs::read_dir(dir)
-            .map_err(|e| StoreError::CompactionFailed(format!("Failed to read dir: {}", e)))?
-        {
-            let entry = entry.map_err(|e| {
-                StoreError::CompactionFailed(format!("Failed to read entry: {}", e))
-            })?;
-            let path = entry.path();
-            if let Some(name) = path.file_name() {
-                let name = name.to_string_lossy();
-                if name.starts_with("segment-") && name.ends_with(".dat") {
-                    if let Ok(id) =
-                        name["segment-".len()..name.len() - ".dat".len()].parse::<usize>()
-                    {
-                        segments.push(id);
-                    }
-                }
-            }
-        }
-
-        segments.sort_unstable();
-        Ok(segments)
-    }
-
     /// Starts manual compaction for this store.
     pub fn compact(&mut self) -> Result<()> {
         compaction::compact(self)
-    }
-
-    /// Creates a new segment file.
-    fn new_segment_file(&mut self) -> Result<File> {
-        self.active_segment_id += 1;
-        let new_path = self
-            .base_dir
-            .join(format!("segment-{:04}.dat", self.active_segment_id));
-
-        let file = OpenOptions::new()
-            .create(true)
-            .read(true)
-            .write(true)
-            .open(&new_path)
-            .map_err(StoreError::Io)?;
-
-        Ok(file)
     }
 }
