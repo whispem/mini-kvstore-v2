@@ -1,7 +1,7 @@
 //! Manual log compaction logic.
 
 use super::error::{Result, StoreError};
-use crate::KVStore;
+use crate::store::KVStore;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
