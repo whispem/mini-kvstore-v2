@@ -10,7 +10,7 @@ const SEGMENT_SIZE_LIMIT: u64 = 1024 * 1024;
 pub struct Segment {
     pub path: std::path::PathBuf,
     pub id: usize, // Unused field allowed for Clippy
-    // TODO: Add other fields if necessary.
+                   // TODO: Add other fields if necessary.
 }
 
 #[allow(dead_code)]
