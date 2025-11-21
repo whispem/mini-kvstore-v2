@@ -111,9 +111,9 @@ pub fn create_router(storage: Arc<Mutex<BlobStorage>>) -> Router {
         .route("/", get(health_check))
         .route("/health", get(health_check))
         .route("/blobs", get(list_blobs))
-        .route("/blobs/{key}", post(put_blob))
-        .route("/blobs/{key}", get(get_blob))
-        .route("/blobs/{key}", delete(delete_blob))
+        .route("/blobs/:key", post(put_blob))
+        .route("/blobs/:key", get(get_blob))
+        .route("/blobs/:key", delete(delete_blob))
         .with_state(state)
 }
 
