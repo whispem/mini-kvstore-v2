@@ -48,10 +48,7 @@ impl Segment {
     }
 
     /// Reads a value at a given offset (stub).
-    pub fn read_value_at(
-        &mut self,
-        _offset: u64,
-    ) -> Result<Option<Vec<u8>>, std::io::Error> {
+    pub fn read_value_at(&mut self, _offset: u64) -> Result<Option<Vec<u8>>, std::io::Error> {
         Ok(None)
     }
 
