@@ -1,7 +1,7 @@
 //! Key-value store engine implementation.
 
-use crate::store::error::{Result, StoreError};
 use crate::store::compaction;
+use crate::store::error::{Result, StoreError};
 use crate::store::stats::StoreStats;
 use std::collections::HashMap;
 use std::fs;
@@ -20,8 +20,7 @@ impl KVStore {
     pub fn open<P: AsRef<Path>>(dir: P) -> Result<Self> {
         let base_dir = dir.as_ref().to_path_buf();
         if !base_dir.exists() {
-            fs::create_dir_all(&base_dir)
-                .map_err(|e| StoreError::Io(e))?;
+            fs::create_dir_all(&base_dir).map_err(|e| StoreError::Io(e))?;
         }
         Ok(Self {
             base_dir,
@@ -42,7 +41,6 @@ impl KVStore {
     /// Gets the value for a key.
     pub fn get(&self, key: &str) -> Result<Option<Vec<u8>>> {
         if let Some((_segment, _offset, _len)) = self.index.get(key) {
-        
             Ok(Some(Vec::new()))
         } else {
             Ok(None)
@@ -51,13 +49,11 @@ impl KVStore {
 
     /// Sets a key-value pair.
     pub fn set(&mut self, key: &str, value: &[u8]) -> Result<()> {
-        // ... logique ajout ...
         Ok(())
     }
 
     /// Deletes a key.
     pub fn delete(&mut self, key: &str) -> Result<()> {
-        // ... logique suppression ...
         Ok(())
     }
 
@@ -65,8 +61,8 @@ impl KVStore {
     pub fn stats(&self) -> StoreStats {
         StoreStats {
             num_keys: self.index.len(),
-            num_segments: 1, 
-            total_bytes: 1,  
+            num_segments: 1,
+            total_bytes: 1,
             active_segment_id: 0,
             oldest_segment_id: 0,
         }
