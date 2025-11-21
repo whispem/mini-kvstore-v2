@@ -1,4 +1,4 @@
-//! Volume binary entrypoint
+//! Volume binary entrypoint.
 
 use mini_kvstore_v2::volume::server::{start_volume_server, VolumeConfig};
 use std::net::SocketAddr;
