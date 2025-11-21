@@ -26,8 +26,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Retrieve a blob
-    if let Some(data) = storage.get("user:bob:profile")? {
-        println!("✓ Retrieved blob: {}", String::from_utf8_lossy(&data));
+    if let Some(ref data) = storage.get("user:bob:profile")? {
+        println!("✓ Retrieved blob: {}", String::from_utf8_lossy(data));
     }
 
     // List all blobs
