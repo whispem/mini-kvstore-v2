@@ -1,19 +1,19 @@
-use std::io::{self, Write};
-use store::error::Result;
+//! CLI binary for mini-kvstore-v2.
 
-mod store;
-use store::KVStore;
+use mini_kvstore_v2::store::error::Result;
+use mini_kvstore_v2::KVStore;
+use std::io::{self, Write};
 
 fn print_help() {
     println!("Commands:");
-    println!("  set <key> <value>        — set or update a key");
-    println!("  get <key>                — get a value");
-    println!("  delete <key>             — delete a key");
-    println!("  list                     — list all keys");
-    println!("  compact                  — run manual compaction");
-    println!("  stats                    — show store statistics");
-    println!("  help                     — show this help");
-    println!("  quit / exit              — exit");
+    println!("  set <key> <value>   — set or update a key");
+    println!("  get <key>           — get a value");
+    println!("  delete <key>        — delete a key");
+    println!("  list                — list all keys");
+    println!("  compact             — run manual compaction");
+    println!("  stats               — show store statistics");
+    println!("  help                — show this help");
+    println!("  quit / exit         — exit");
 }
 
 fn main() -> Result<()> {
@@ -59,7 +59,7 @@ fn main() -> Result<()> {
                 };
 
                 match kv.set(key, value.as_bytes()) {
-                    Ok(_) => println!("OK"),
+                    Ok(()) => println!("OK"),
                     Err(e) => println!("Error: {}", e),
                 }
             }
@@ -88,7 +88,7 @@ fn main() -> Result<()> {
                 };
 
                 match kv.delete(key) {
-                    Ok(_) => println!("Deleted"),
+                    Ok(()) => println!("Deleted"),
                     Err(e) => println!("Error: {}", e),
                 }
             }
@@ -104,7 +104,7 @@ fn main() -> Result<()> {
                 }
             }
             "compact" => match kv.compact() {
-                Ok(_) => println!("Compaction finished"),
+                Ok(()) => println!("Compaction finished"),
                 Err(e) => println!("Compaction error: {}", e),
             },
             "stats" => {
