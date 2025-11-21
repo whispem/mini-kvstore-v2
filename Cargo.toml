@@ -2,12 +2,14 @@
 name = "mini-kvstore-v2"
 version = "0.3.0"
 edition = "2021"
-description = "A segmented append-only key-value store with checksums and compaction"
+authors = ["Em' <whispem@users.noreply.github.com>"]
+description = "A segmented append-only key-value store with checksums, compaction, and HTTP API"
 license = "MIT"
 repository = "https://github.com/whispem/mini-kvstore-v2"
 readme = "README.md"
-keywords = ["kvstore", "storage", "database", "log-structured"]
-categories = ["database-implementations"]
+keywords = ["kvstore", "storage", "database", "log-structured", "distributed"]
+categories = ["database-implementations", "data-structures"]
+rust-version = "1.75"
 
 [dependencies]
 # Error handling
@@ -30,6 +32,10 @@ clap = { version = "4", features = ["derive"] }
 criterion = { version = "0.5", features = ["html_reports"] }
 tokio = { version = "1", features = ["full", "test-util"] }
 
+[features]
+# Feature for running heavy/resource-intensive tests
+heavy-tests = []
+
 [[bin]]
 name = "mini-kvstore-v2"
 path = "src/main.rs"
@@ -41,3 +47,12 @@ path = "src/volume/main.rs"
 [[bench]]
 name = "kvstore_bench"
 harness = false
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.bench]
+inherits = "release"
