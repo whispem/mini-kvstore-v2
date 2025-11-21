@@ -65,10 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         0.0
     };
 
-    println!(
-        "Compaction saved {:.2} MB ({:.1}%)",
-        saved_mb, saved_pct
-    );
+    println!("Compaction saved {:.2} MB ({:.1}%)", saved_mb, saved_pct);
 
     Ok(())
 }
