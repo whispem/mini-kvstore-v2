@@ -82,8 +82,6 @@ curl http://localhost:8000/blobs
 
 ### CLI Session
 
-### CLI Session
-
 ```
 > set name Alice
 OK
