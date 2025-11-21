@@ -1,16 +1,13 @@
-// src/volume/main.rs
-use mini_kvstore_v2::volume::config::VolumeConfig;
 use mini_kvstore_v2::volume::server::start_volume_server;
+use mini_kvstore_v2::volume::config::VolumeConfig;
 use std::net::SocketAddr;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Parse configuration from environment variables
-    let volume_id = std::env::var("VOLUME_ID").unwrap_or_else(|_| "vol-1".to_string());
-    let data_dir =
-        std::env::var("DATA_DIR").unwrap_or_else(|_| format!("volume_data_{}", volume_id));
+    let volume_id = std::env::var("VOLUME_ID").unwrap_or_else(|_| "vol-1".into());
+    let data_dir = std::env::var("DATA_DIR").unwrap_or_else(|_| format!("volume_data_{}", volume_id));
     let port: u16 = std::env::var("PORT")
-        .unwrap_or_else(|_| "9002".to_string())
+        .unwrap_or_else(|_| "9002".into())
         .parse()
         .unwrap_or(9002);
 
