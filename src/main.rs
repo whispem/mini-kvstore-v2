@@ -1,4 +1,3 @@
-// src/main.rs
 use mini_kvstore_v2::{KVStore, StoreStats};
 use std::io::{self, Write};
 
@@ -23,34 +22,17 @@ fn main() {
 
         match cmd {
             "set" => {
-                let key = match parts.next() {
-                    Some(k) => k,
-                    None => {
-                        println!("Usage: set <key> <value>");
-                        continue;
-                    }
-                };
-                let value = match parts.next() {
-                    Some(v) => v,
-                    None => {
-                        println!("Usage: set <key> <value>");
-                        continue;
-                    }
-                };
-                match kv.set(key, value.as_bytes()) {
+                let key = parts.next().unwrap_or("");
+                let val = parts.next().unwrap_or("");
+
+                match kv.set(key, val.as_bytes()) {
                     Ok(()) => println!("OK"),
                     Err(e) => println!("Error: {}", e),
                 }
             }
 
             "get" => {
-                let key = match parts.next() {
-                    Some(k) => k,
-                    None => {
-                        println!("Usage: get <key>");
-                        continue;
-                    }
-                };
+                let key = parts.next().unwrap_or("");
 
                 match kv.get(key) {
                     Ok(Some(v)) => println!("{}", String::from_utf8_lossy(&v)),
@@ -60,13 +42,7 @@ fn main() {
             }
 
             "delete" => {
-                let key = match parts.next() {
-                    Some(k) => k,
-                    None => {
-                        println!("Usage: delete <key>");
-                        continue;
-                    }
-                };
+                let key = parts.next().unwrap_or("");
                 match kv.delete(key) {
                     Ok(()) => println!("Deleted"),
                     Err(e) => println!("Error: {}", e),
@@ -74,13 +50,8 @@ fn main() {
             }
 
             "list" => {
-                let keys = kv.list_keys();
-                if keys.is_empty() {
-                    println!("No keys");
-                } else {
-                    for key in keys {
-                        println!("  {}", key);
-                    }
+                for key in kv.list_keys() {
+                    println!("  {}", key);
                 }
             }
 
@@ -89,15 +60,10 @@ fn main() {
                 Err(e) => println!("Compaction error: {}", e),
             },
 
-            "stats" => {
-                let stats = kv.stats();
-                println!("{:?}", stats);
-            }
-
+            "stats" => println!("{:?}", kv.stats()),
             "help" => print_help(),
             "quit" | "exit" => break,
-
-            other => println!("Unknown command: '{}'", other),
+            other => println!("Unknown command: {}", other),
         }
     }
 }
