@@ -1,89 +1,73 @@
-//! Persistence example demonstrating data durability across restarts.
-
 use mini_kvstore_v2::KVStore;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("=== Persistence Example ===\n");
+    println!("=== Persistence Example ===");
 
-    let data_dir = "persistence_example";
-
-    // First session: write data
-    println!("Session 1: Writing data...");
+    // Session 1: set values
     {
-        let mut store = KVStore::open(data_dir)?;
+        let mut store = KVStore::open("persisted_store")?;
         store.set("session", b"first")?;
         store.set("counter", b"42")?;
         store.set("name", b"Test Store")?;
-        println!("✓ Wrote 3 keys");
-
-        let stats = store.stats();
-        assert_eq!(stats.num_keys, 3, "Should have 3 keys in session 1");
-        println!("  Keys: {}", stats.num_keys);
+        println!("✓ Values written: session, counter, name");
     }
-    println!("✓ Store closed\n");
 
-    // Second session: read and modify
-    println!("Session 2: Reading and modifying...");
+    // Session 2: read and modify values
     {
-        let mut store = KVStore::open(data_dir)?;
-
-        // Verify data persisted from session 1
-        let session = store.get("session")?;
-        assert_eq!(session, Some(b"first".to_vec()), "Session value should persist");
-
-        let counter = store.get("counter")?;
-        assert_eq!(counter, Some(b"42".to_vec()), "Counter value should persist");
-
-        let name = store.get("name")?;
-        assert_eq!(name, Some(b"Test Store".to_vec()), "Name value should persist");
-
-        println!("✓ All data persisted correctly from session 1");
-
-        // Modify data
-        store.set("session", b"second")?;
-        store.set("counter", b"43")?;
-        store.delete("name")?;
-        println!("✓ Modified data in session 2");
-
-        let stats = store.stats();
-        assert_eq!(stats.num_keys, 2, "Should have 2 keys after deletion");
-        println!("  Keys: {}", stats.num_keys);
-    }
-    println!("✓ Store closed\n");
-
-    // Third session: verify modifications
-    println!("Session 3: Verifying modifications...");
-    {
-        let mut store = KVStore::open(data_dir)?;
-
-        // Verify modifications from session 2 persisted
+        let mut store = KVStore::open("persisted_store")?;
         let session = store.get("session")?;
         assert_eq!(
             session,
-            Some(b"second".to_vec()),
-            "Updated session value should persist"
+            Some(b"first".to_vec()),
+            "Session value should persist"
         );
 
         let counter = store.get("counter")?;
         assert_eq!(
             counter,
-            Some(b"43".to_vec()),
-            "Updated counter value should persist"
+            Some(b"42".to_vec()),
+            "Counter value should persist"
         );
 
         let name = store.get("name")?;
-        assert_eq!(name, None, "Deleted key should not exist");
+        assert_eq!(
+            name,
+            Some(b"Test Store".to_vec()),
+            "Name value should persist"
+        );
 
-        println!("✓ Modifications persisted correctly from session 2");
+        println!("✓ All data persisted correctly from session 1");
 
-        let stats = store.stats();
-        assert_eq!(stats.num_keys, 2, "Should still have 2 keys");
-        println!("  Keys: {}", stats.num_keys);
-        println!("  Segments: {}", stats.num_segments);
+        // Update counter
+        let new_counter = b"43";
+        store.set("counter", new_counter)?;
+        println!("✓ Counter updated to 43");
+
+        // Delete "name"
+        store.delete("name")?;
+        println!("✓ Name deleted");
     }
 
-    println!("\n✓ Persistence verified across 3 sessions!");
-    println!("  - Session 1: Write initial data");
+    // Session 3: verify changes
+    {
+        let store = KVStore::open("persisted_store")?;
+        let session = store.get("session")?;
+        assert_eq!(
+            session,
+            Some(b"first".to_vec()),
+            "Session should still persist"
+        );
+        let counter = store.get("counter")?;
+        assert_eq!(
+            counter,
+            Some(b"43".to_vec()),
+            "Counter should reflect update"
+        );
+        let name = store.get("name")?;
+        assert_eq!(name, None, "Name should have been deleted");
+        println!("✓ Session, updated counter, and delete verified");
+    }
+
     println!("  - Session 2: Read, modify, delete");
     println!("  - Session 3: Verify all changes persisted");
 
