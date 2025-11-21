@@ -26,7 +26,10 @@ pub fn compact(store: &mut KVStore) -> Result<()> {
     let mut live_data: Vec<(String, Vec<u8>)> = Vec::new();
     let keys = store.list_keys();
     for key in keys {
-        if let Some(value) = store.get(&key).map_err(|e| StoreError::CompactionFailed(e.to_string()))? {
+        if let Some(value) = store
+            .get(&key)
+            .map_err(|e| StoreError::CompactionFailed(e.to_string()))?
+        {
             live_data.push((key, value));
         }
     }
@@ -40,12 +43,8 @@ pub fn compact(store: &mut KVStore) -> Result<()> {
     // This helper uses standard Rust I/O; replace it with an actual serialization as desired.
     for (key, value) in &live_data {
         use std::io::Write;
-        writeln!(
-            &mut seg_file,
-            "{}:{}",
-            key,
-            String::from_utf8_lossy(value)
-        ).map_err(|e| StoreError::CompactionFailed(format!("Write error: {}", e)))?;
+        writeln!(&mut seg_file, "{}:{}", key, String::from_utf8_lossy(value))
+            .map_err(|e| StoreError::CompactionFailed(format!("Write error: {}", e)))?;
     }
 
     // Find all segment files
