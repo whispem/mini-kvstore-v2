@@ -88,8 +88,9 @@ impl KVStore {
         for entry in fs::read_dir(dir)
             .map_err(|e| StoreError::CompactionFailed(format!("Failed to read dir: {}", e)))?
         {
-            let entry = entry
-                .map_err(|e| StoreError::CompactionFailed(format!("Failed to read entry: {}", e)))?;
+            let entry = entry.map_err(|e| {
+                StoreError::CompactionFailed(format!("Failed to read entry: {}", e))
+            })?;
             let path = entry.path();
             if let Some(name) = path.file_name() {
                 let name = name.to_string_lossy();
