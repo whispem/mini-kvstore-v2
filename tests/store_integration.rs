@@ -57,7 +57,7 @@ fn missing_key_returns_none() {
     let test_dir = "tests_data/int_missing_key";
     setup_test_dir(test_dir);
 
-    let mut store = KVStore::open(test_dir).unwrap();
+    let store = KVStore::open(test_dir).unwrap();
     assert_eq!(store.get("does_not_exist").unwrap(), None);
 
     cleanup_test_dir(test_dir);
@@ -85,7 +85,7 @@ fn persistence_after_reopen() {
         store.set("persistent", b"value").unwrap();
     }
 
-    let mut store = KVStore::open(test_dir).unwrap();
+    let store = KVStore::open(test_dir).unwrap();
     assert_eq!(store.get("persistent").unwrap(), Some(b"value".to_vec()));
 
     cleanup_test_dir(test_dir);
@@ -254,7 +254,7 @@ fn persistence_after_compaction_and_reopen() {
 
     // Reopen and verify
     {
-        let mut store = KVStore::open(test_dir).unwrap();
+        let store = KVStore::open(test_dir).unwrap();
         assert_eq!(store.get("key").unwrap(), Some(b"value_9".to_vec()));
     }
 
