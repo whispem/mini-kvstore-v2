@@ -1,3 +1,5 @@
+//! Core KVStore engine implementation.
+
 use crate::store::config::StoreConfig;
 use crate::store::error::{Result, StoreError};
 use crate::store::index::Index;
@@ -34,10 +36,14 @@ use std::path::Path;
 /// # }
 /// ```
 pub struct KVStore {
-    pub config: StoreConfig,
-    pub segments: HashMap<usize, Segment>,
-    pub index: Index,
-    pub active_id: usize,
+    /// Store configuration.
+    pub(crate) config: StoreConfig,
+    /// Open segment files.
+    pub(crate) segments: HashMap<usize, Segment>,
+    /// In-memory index.
+    pub(crate) index: Index,
+    /// Currently active segment ID for writes.
+    pub(crate) active_id: usize,
 }
 
 impl KVStore {
@@ -85,7 +91,7 @@ impl KVStore {
     ///
     /// ```no_run
     /// use mini_kvstore_v2::KVStore;
-    /// # use mini_kvstore_v2::store::config::StoreConfig;
+    /// use mini_kvstore_v2::store::config::StoreConfig;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let config = StoreConfig::new("custom_data");
@@ -96,12 +102,15 @@ impl KVStore {
     pub fn open_with_config(config: StoreConfig) -> Result<Self> {
         fs::create_dir_all(&config.data_dir)?;
 
+        // Find existing segment files
         let mut ids: Vec<usize> = fs::read_dir(&config.data_dir)?
             .filter_map(|res| res.ok())
             .filter_map(|entry| {
                 let fname = entry.file_name().to_string_lossy().to_string();
                 if fname.starts_with("segment-") && fname.ends_with(".dat") {
-                    fname["segment-".len()..fname.len() - 4].parse().ok()
+                    // Parse segment-NNNN.dat
+                    let num_part = &fname[8..fname.len() - 4];
+                    num_part.parse().ok()
                 } else {
                     None
                 }
@@ -111,12 +120,14 @@ impl KVStore {
 
         let active_id = ids.last().copied().unwrap_or(0);
 
+        // Open all existing segments
         let mut segments = HashMap::new();
         for &id in &ids {
             let seg = Segment::open(&config.data_dir, id)?;
             segments.insert(id, seg);
         }
 
+        // Ensure active segment exists
         if let std::collections::hash_map::Entry::Vacant(e) = segments.entry(active_id) {
             let seg = Segment::open(&config.data_dir, active_id)?;
             e.insert(seg);
@@ -134,7 +145,7 @@ impl KVStore {
         Ok(store)
     }
 
-    /// Rebuild in-memory index from all segments
+    /// Rebuilds the in-memory index from all segments.
     fn rebuild_index(&mut self) -> Result<()> {
         let mut ordered_ids: Vec<usize> = self.segments.keys().copied().collect();
         ordered_ids.sort_unstable();
@@ -155,16 +166,15 @@ impl KVStore {
                             self.index.remove(&key);
                         }
 
-                        let key_bytes = key.as_bytes();
-                        let record_size = 8
-                            + 8
-                            + key_bytes.len() as u64
-                            + value_opt.as_ref().map(|v| v.len() as u64).unwrap_or(0);
-                        pos += record_size;
+                        // Calculate record size to advance position
+                        let key_len = key.as_bytes().len() as u64;
+                        let value_len = value_opt
+                            .as_ref()
+                            .map(|v| v.len() as u64)
+                            .unwrap_or(u64::MAX);
+                        pos += Segment::record_size(key_len, value_len);
                     }
-                    Ok(None) => {
-                        break;
-                    }
+                    Ok(None) => break,
                     Err(e) => {
                         eprintln!(
                             "Warning: Failed to read record at position {} in segment {}: {}",
@@ -208,15 +218,18 @@ impl KVStore {
     /// - A new segment cannot be created when rotation is needed
     /// - The fsync operation fails
     pub fn set(&mut self, key: &str, value: &[u8]) -> Result<()> {
-        let active_seg = self
-            .segments
-            .get_mut(&self.active_id)
-            .ok_or(StoreError::ActiveSegmentNotFound)?;
+        // Check if we need to rotate to a new segment
+        {
+            let active_seg = self
+                .segments
+                .get(&self.active_id)
+                .ok_or(StoreError::ActiveSegmentNotFound)?;
 
-        if active_seg.is_full() {
-            self.active_id += 1;
-            let new_seg = Segment::open(&self.config.data_dir, self.active_id)?;
-            self.segments.insert(self.active_id, new_seg);
+            if active_seg.is_full() {
+                self.active_id += 1;
+                let new_seg = Segment::open(&self.config.data_dir, self.active_id)?;
+                self.segments.insert(self.active_id, new_seg);
+            }
         }
 
         let active_seg = self
@@ -266,7 +279,7 @@ impl KVStore {
                 .get_mut(&seg_id)
                 .ok_or(StoreError::SegmentNotFound(seg_id))?;
 
-            seg.read_value_at(offset).map_err(StoreError::from)
+            seg.read_value_at(offset)
         } else {
             Ok(None)
         }
@@ -300,19 +313,22 @@ impl KVStore {
     ///
     /// Returns an error if the tombstone cannot be written to the active segment.
     pub fn delete(&mut self, key: &str) -> Result<()> {
-        if !self.index.map.contains_key(key) {
+        if !self.index.contains(key) {
             return Ok(());
         }
 
-        let active_seg = self
-            .segments
-            .get_mut(&self.active_id)
-            .ok_or(StoreError::ActiveSegmentNotFound)?;
+        // Check if we need to rotate to a new segment
+        {
+            let active_seg = self
+                .segments
+                .get(&self.active_id)
+                .ok_or(StoreError::ActiveSegmentNotFound)?;
 
-        if active_seg.is_full() {
-            self.active_id += 1;
-            let new_seg = Segment::open(&self.config.data_dir, self.active_id)?;
-            self.segments.insert(self.active_id, new_seg);
+            if active_seg.is_full() {
+                self.active_id += 1;
+                let new_seg = Segment::open(&self.config.data_dir, self.active_id)?;
+                self.segments.insert(self.active_id, new_seg);
+            }
         }
 
         let active_seg = self
@@ -346,7 +362,7 @@ impl KVStore {
     /// # }
     /// ```
     pub fn list_keys(&self) -> Vec<String> {
-        self.index.map.keys().cloned().collect()
+        self.index.keys().cloned().collect()
     }
 
     /// Returns statistics about the store.
@@ -371,9 +387,7 @@ impl KVStore {
     pub fn stats(&self) -> StoreStats {
         let num_keys = self.index.len();
         let num_segments = self.segments.len();
-
         let total_bytes: u64 = self.segments.values().map(|s| s.len).sum();
-
         let oldest_segment_id = self.segments.keys().copied().min().unwrap_or(0);
 
         StoreStats {
@@ -417,5 +431,65 @@ impl KVStore {
     /// - Old segments cannot be deleted
     pub fn compact(&mut self) -> Result<()> {
         crate::store::compaction::compact_segments(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::{create_dir_all, remove_dir_all};
+
+    fn setup_test_dir(path: &str) {
+        let _ = remove_dir_all(path);
+        create_dir_all(path).expect("Failed to create test directory");
+    }
+
+    fn cleanup_test_dir(path: &str) {
+        let _ = remove_dir_all(path);
+    }
+
+    #[test]
+    fn test_open_and_set_get() {
+        let test_dir = "tests_data/engine_open";
+        setup_test_dir(test_dir);
+
+        let mut store = KVStore::open(test_dir).unwrap();
+        store.set("key", b"value").unwrap();
+
+        assert_eq!(store.get("key").unwrap(), Some(b"value".to_vec()));
+
+        cleanup_test_dir(test_dir);
+    }
+
+    #[test]
+    fn test_persistence() {
+        let test_dir = "tests_data/engine_persistence";
+        setup_test_dir(test_dir);
+
+        {
+            let mut store = KVStore::open(test_dir).unwrap();
+            store.set("persistent", b"data").unwrap();
+        }
+
+        {
+            let mut store = KVStore::open(test_dir).unwrap();
+            assert_eq!(store.get("persistent").unwrap(), Some(b"data".to_vec()));
+        }
+
+        cleanup_test_dir(test_dir);
+    }
+
+    #[test]
+    fn test_delete() {
+        let test_dir = "tests_data/engine_delete";
+        setup_test_dir(test_dir);
+
+        let mut store = KVStore::open(test_dir).unwrap();
+        store.set("temp", b"data").unwrap();
+        store.delete("temp").unwrap();
+
+        assert_eq!(store.get("temp").unwrap(), None);
+
+        cleanup_test_dir(test_dir);
     }
 }
