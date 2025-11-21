@@ -7,7 +7,6 @@ mod tests {
     use super::store::engine::KVStore;
 
     fn setup_test_dir(path: &str) {
-        // Remove the directory if it exists, then create it.
         let _ = std::fs::remove_dir_all(path);
         std::fs::create_dir_all(path).expect("Failed to create test directory");
     }
@@ -27,7 +26,10 @@ mod tests {
         store.set("emoji_key", "🎉".as_bytes()).unwrap();
 
         assert_eq!(store.get("english").unwrap(), Some(b"value".to_vec()));
-        assert_eq!(store.get("emoji_key").unwrap(), Some("🎉".as_bytes().to_vec()));
+        assert_eq!(
+            store.get("emoji_key").unwrap(),
+            Some("🎉".as_bytes().to_vec())
+        );
 
         cleanup_test_dir(test_dir);
     }
