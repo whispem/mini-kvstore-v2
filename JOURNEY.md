@@ -4,7 +4,7 @@
 
 **October 27, 2025**: Started learning Rust  
 **November 16, 2025**: Started this project (mini-kvstore-v2)  
-**November 21, 2025**: 217 commits, working segmented log KV store with HTTP API
+**November 21, 2025**: 364 commits, working segmented log KV store with HTTP API
 
 ## Why This Project?
 
