@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+#![allow(unused_variables)]
 use crate::store::bloom::BloomIndex;
 use crate::store::error::{Result, StoreError};
 use crate::store::record;
