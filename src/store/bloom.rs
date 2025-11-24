@@ -9,8 +9,7 @@ impl BloomIndex {
     pub fn new(expected_items: usize) -> Self {
         // Bitmap size = expected_items * 10 (rule of thumb)
         let bitmap_size = expected_items * 10;
-        let bloom = Bloom::new(bitmap_size, expected_items)
-            .expect("failed to create bloom filter");
+        let bloom = Bloom::new(bitmap_size, expected_items).expect("failed to create bloom filter");
 
         Self { bloom }
     }

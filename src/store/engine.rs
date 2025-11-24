@@ -1,8 +1,8 @@
 #![allow(clippy::while_let_loop)]
+use crate::store::bloom::BloomIndex;
 use crate::store::error::{Result, StoreError};
 use crate::store::index::Index;
-use crate::store::record::{self, OP_SET, OP_DEL};
-use crate::store::bloom::BloomIndex;
+use crate::store::record::{self, OP_DEL, OP_SET};
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufReader, BufWriter, Write};
@@ -60,7 +60,10 @@ impl KVStore {
         let new_id = last_id + 1;
 
         let active_path = base_dir.join(format!("{}{}{}", SEGMENT_PREFIX, new_id, SEGMENT_SUFFIX));
-        let file = OpenOptions::new().create(true).append(true).open(&active_path)?;
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&active_path)?;
         let writer = BufWriter::new(file);
 
         Ok(Self {
@@ -86,27 +89,25 @@ impl KVStore {
 
         loop {
             match record::read_record(&mut reader)? {
-                Some((op, key, value)) => {
-                    match op {
-                        OP_SET => {
-                            if let Some(v) = value {
-                                values.insert(key.clone(), v.clone());
-                                index.insert(key.clone(), seg_id, 0);
-                                bloom.insert(&key);
-                            }
+                Some((op, key, value)) => match op {
+                    OP_SET => {
+                        if let Some(v) = value {
+                            values.insert(key.clone(), v.clone());
+                            index.insert(key.clone(), seg_id, 0);
+                            bloom.insert(&key);
                         }
-                        OP_DEL => {
-                            values.remove(&key);
-                            index.remove(&key);
-                        }
-                        _ => {
-                            return Err(StoreError::CorruptedData(format!(
-                                "invalid opcode in {}",
-                                path.display()
-                            )));
-                        }
-                    }
-                }
+                    },
+                    OP_DEL => {
+                        values.remove(&key);
+                        index.remove(&key);
+                    },
+                    _ => {
+                        return Err(StoreError::CorruptedData(format!(
+                            "invalid opcode in {}",
+                            path.display()
+                        )));
+                    },
+                },
                 None => break,
             }
         }
@@ -124,7 +125,8 @@ impl KVStore {
         writer.flush().map_err(StoreError::Io)?;
 
         self.values.insert(key.to_string(), value.to_vec());
-        self.index.insert(key.to_string(), self.active_segment_id, 0);
+        self.index
+            .insert(key.to_string(), self.active_segment_id, 0);
         self.bloom.insert(key);
 
         if let Ok(meta) = writer.get_ref().metadata() {
@@ -178,9 +180,10 @@ impl KVStore {
             .active_segment_id
             .checked_add(1)
             .ok_or_else(|| StoreError::Io(std::io::Error::other("segment id overflow")))?;
-        let path = self
-            .base_dir
-            .join(format!("{}{}{}", SEGMENT_PREFIX, self.active_segment_id, SEGMENT_SUFFIX));
+        let path = self.base_dir.join(format!(
+            "{}{}{}",
+            SEGMENT_PREFIX, self.active_segment_id, SEGMENT_SUFFIX
+        ));
         let file = OpenOptions::new().create(true).append(true).open(&path)?;
         self.active_writer = Some(BufWriter::new(file));
         Ok(())

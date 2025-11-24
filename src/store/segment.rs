@@ -3,7 +3,7 @@
 use crate::store::bloom::BloomIndex;
 use crate::store::error::{Result, StoreError};
 use crate::store::record;
-use crate::store::record::{OP_SET, OP_DEL};
+use crate::store::record::{OP_DEL, OP_SET};
 use crc32fast::Hasher as Crc32;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, Seek, SeekFrom};
@@ -45,8 +45,7 @@ impl Segment {
 
     pub fn read_record_at(&self, offset: u64) -> Result<Option<(String, Option<Vec<u8>>)>> {
         let mut file = File::open(&self.path).map_err(StoreError::Io)?;
-        file.seek(SeekFrom::Start(offset))
-            .map_err(StoreError::Io)?;
+        file.seek(SeekFrom::Start(offset)).map_err(StoreError::Io)?;
 
         let mut reader = BufReader::new(file);
 

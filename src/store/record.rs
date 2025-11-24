@@ -22,12 +22,7 @@ pub const MAGIC: [u8; 2] = [0xF0, 0xF1];
 pub const OP_SET: u8 = 1;
 pub const OP_DEL: u8 = 2;
 
-pub fn write_record<W: Write>(
-    mut w: W,
-    op: u8,
-    key: &str,
-    value: Option<&[u8]>,
-) -> Result<()> {
+pub fn write_record<W: Write>(mut w: W, op: u8, key: &str, value: Option<&[u8]>) -> Result<()> {
     // MAGIC
     w.write_all(&MAGIC)?;
 
@@ -67,9 +62,7 @@ pub fn write_record<W: Write>(
     Ok(())
 }
 
-pub fn read_record<R: Read>(
-    mut r: R,
-) -> Result<Option<(u8, String, Option<Vec<u8>>)>> {
+pub fn read_record<R: Read>(mut r: R) -> Result<Option<(u8, String, Option<Vec<u8>>)>> {
     let mut magic = [0u8; 2];
     if r.read_exact(&mut magic).is_err() {
         return Ok(None);
@@ -91,8 +84,8 @@ pub fn read_record<R: Read>(
 
     let mut key = vec![0u8; key_len];
     r.read_exact(&mut key)?;
-    let key = String::from_utf8(key)
-        .map_err(|_| StoreError::Corrupted("invalid UTF-8 in key".into()))?;
+    let key =
+        String::from_utf8(key).map_err(|_| StoreError::Corrupted("invalid UTF-8 in key".into()))?;
 
     let value = if op[0] == OP_SET {
         let mut val = vec![0u8; val_len];

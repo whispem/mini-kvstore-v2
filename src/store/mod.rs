@@ -1,9 +1,9 @@
-pub mod record;
 pub mod bloom;
-pub mod segment;
-pub mod index;
 pub mod compaction;
-pub mod error;
 pub mod config;
 pub mod engine;
+pub mod error;
+pub mod index;
+pub mod record;
+pub mod segment;
 pub mod stats;

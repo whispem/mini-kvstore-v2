@@ -16,7 +16,9 @@ pub struct Index {
 
 impl Index {
     pub fn new() -> Self {
-        Self { map: HashMap::new() }
+        Self {
+            map: HashMap::new(),
+        }
     }
 
     /// Insert or update a key -> (segment_id, offset)

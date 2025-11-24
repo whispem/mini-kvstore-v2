@@ -1,13 +1,16 @@
-use std::{net::SocketAddr, sync::{Arc, Mutex}};
+use std::{
+    net::SocketAddr,
+    sync::{Arc, Mutex},
+};
 
 use axum::{
     extract::{Extension, Path},
-    routing::{get, post, delete},
+    routing::{delete, get, post},
     Json, Router,
 };
+use mini_kvstore_v2::{KVStore, StoreStats};
 use serde::{Deserialize, Serialize};
 use tokio::task;
-use mini_kvstore_v2::{KVStore, StoreStats};
 
 //
 // --- Request / Response structs ---

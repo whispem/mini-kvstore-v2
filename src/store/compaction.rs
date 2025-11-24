@@ -1,7 +1,7 @@
 //! Manual log compaction logic.
 
-use crate::store::error::{Result, StoreError};
 use crate::store::engine::KVStore;
+use crate::store::error::{Result, StoreError};
 use std::fs;
 
 /// Performs manual compaction.
