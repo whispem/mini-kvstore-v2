@@ -1,7 +1,7 @@
 //! Manual log compaction logic.
 
-use super::error::{Result, StoreError};
-use crate::store::KVStore;
+use crate::store::error::{Result, StoreError};
+use crate::store::engine::KVStore;
 use std::fs;
 
 /// Performs manual compaction.
@@ -22,9 +22,7 @@ pub fn compact(store: &mut KVStore) -> Result<()> {
         }
     }
 
-    // Recreate a fresh active segment for further writes
     store.reset_active_segment()?;
-
     Ok(())
 }
 

@@ -27,6 +27,8 @@ tower = { version = "0.5", features = ["util"] }
 
 # CLI
 clap = { version = "4", features = ["derive"] }
+bloomfilter = "3.0.1"
+sha2 = "0.10.9"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -56,3 +58,7 @@ strip = true
 
 [profile.bench]
 inherits = "release"
+
+# Bloom filter + hashing (pour BloomIndex)
+bloomfilter = "1.0"
+sha2 = "0.10"
