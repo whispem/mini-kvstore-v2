@@ -11,6 +11,7 @@ use axum::{
 };
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
+use tower_http::limit::RequestBodyLimitLayer;
 
 /// Shared application state.
 #[derive(Clone)]
@@ -31,6 +32,35 @@ struct HealthResponse {
     keys: usize,
     segments: usize,
     total_mb: f64,
+    uptime_secs: u64,
+}
+
+#[derive(Serialize)]
+struct MetricsResponse {
+    // Storage metrics
+    total_keys: usize,
+    total_segments: usize,
+    total_bytes: u64,
+    total_mb: f64,
+    active_segment_id: usize,
+    oldest_segment_id: usize,
+
+    // System info
+    volume_id: String,
+    uptime_secs: u64,
+
+    // Per-key stats
+    avg_value_size_bytes: f64,
+}
+
+// Track server start time
+static START_TIME: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+
+fn uptime_secs() -> u64 {
+    START_TIME
+        .get_or_init(std::time::Instant::now)
+        .elapsed()
+        .as_secs()
 }
 
 async fn health_check(State(state): State<AppState>) -> impl IntoResponse {
@@ -43,12 +73,42 @@ async fn health_check(State(state): State<AppState>) -> impl IntoResponse {
         keys: stats.num_keys,
         segments: stats.num_segments,
         total_mb: stats.total_mb(),
+        uptime_secs: uptime_secs(),
     };
 
     (StatusCode::OK, Json(response))
 }
 
-async fn put_blob(State(state): State<AppState>, Path(key): Path<String>, body: Bytes) -> Response {
+async fn metrics(State(state): State<AppState>) -> impl IntoResponse {
+    let storage = state.storage.lock().unwrap();
+    let stats = storage.stats();
+
+    let avg_value_size = if stats.num_keys > 0 {
+        stats.total_bytes as f64 / stats.num_keys as f64
+    } else {
+        0.0
+    };
+
+    let response = MetricsResponse {
+        total_keys: stats.num_keys,
+        total_segments: stats.num_segments,
+        total_bytes: stats.total_bytes,
+        total_mb: stats.total_mb(),
+        active_segment_id: stats.active_segment_id,
+        oldest_segment_id: stats.oldest_segment_id,
+        volume_id: storage.volume_id().to_string(),
+        uptime_secs: uptime_secs(),
+        avg_value_size_bytes: avg_value_size,
+    };
+
+    (StatusCode::OK, Json(response))
+}
+
+async fn put_blob(
+    State(state): State<AppState>,
+    Path(key): Path<String>,
+    body: Bytes,
+) -> Response {
     let mut storage = state.storage.lock().unwrap();
     match storage.put(&key, &body) {
         Ok(meta) => (StatusCode::CREATED, Json(meta)).into_response(),
@@ -110,10 +170,12 @@ pub fn create_router(storage: Arc<Mutex<BlobStorage>>) -> Router {
     Router::new()
         .route("/", get(health_check))
         .route("/health", get(health_check))
+        .route("/metrics", get(metrics))
         .route("/blobs", get(list_blobs))
         .route("/blobs/:key", post(put_blob))
         .route("/blobs/:key", get(get_blob))
         .route("/blobs/:key", delete(delete_blob))
+        .layer(RequestBodyLimitLayer::new(100 * 1024 * 1024)) // 100 MB max
         .with_state(state)
 }
 
@@ -154,10 +216,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_metrics_endpoint() {
+        let storage = setup_test_storage("tests_data/handler_metrics");
+        let app = create_router(storage);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/metrics")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), HttpStatus::OK);
+
+        let _ = std::fs::remove_dir_all("tests_data/handler_metrics");
+    }
+
+    #[tokio::test]
     async fn test_put_and_get_blob() {
         let storage = setup_test_storage("tests_data/handler_put_get");
 
-        // PUT
+        // PUT via storage
         {
             let mut s = storage.lock().unwrap();
             s.put("test-key", b"test data").unwrap();
