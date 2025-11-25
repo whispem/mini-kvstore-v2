@@ -104,11 +104,7 @@ async fn metrics(State(state): State<AppState>) -> impl IntoResponse {
     (StatusCode::OK, Json(response))
 }
 
-async fn put_blob(
-    State(state): State<AppState>,
-    Path(key): Path<String>,
-    body: Bytes,
-) -> Response {
+async fn put_blob(State(state): State<AppState>, Path(key): Path<String>, body: Bytes) -> Response {
     let mut storage = state.storage.lock().unwrap();
     match storage.put(&key, &body) {
         Ok(meta) => (StatusCode::CREATED, Json(meta)).into_response(),

@@ -98,13 +98,10 @@ impl KVStore {
                 Ok(idx) => {
                     println!("✓ Loaded index from snapshot ({} keys)", idx.len());
                     return Some(idx);
-                }
+                },
                 Err(e) => {
-                    eprintln!(
-                        "⚠ Failed to load snapshot: {}, rebuilding from segments",
-                        e
-                    );
-                }
+                    eprintln!("⚠ Failed to load snapshot: {}, rebuilding from segments", e);
+                },
             }
         }
         None
@@ -129,17 +126,17 @@ impl KVStore {
                             index.insert(key.clone(), seg_id, 0);
                             bloom.insert(&key);
                         }
-                    }
+                    },
                     OP_DEL => {
                         values.remove(&key);
                         index.remove(&key);
-                    }
+                    },
                     _ => {
                         return Err(StoreError::CorruptedData(format!(
                             "invalid opcode in {}",
                             path.display()
                         )));
-                    }
+                    },
                 },
                 None => break,
             }

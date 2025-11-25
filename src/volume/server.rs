@@ -36,7 +36,7 @@ pub async fn start_volume_server(
                         Ok(()) => {
                             let elapsed = start.elapsed();
                             println!("✓ Compaction completed in {:.2}s", elapsed.as_secs_f64());
-                        }
+                        },
                         Err(e) => eprintln!("✗ Compaction error: {}", e),
                     }
                 }

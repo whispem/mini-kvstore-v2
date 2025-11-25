@@ -1,7 +1,7 @@
 //! Volume binary entrypoint.
 
-use mini_kvstore_v2::Config;
 use mini_kvstore_v2::volume::server::start_volume_server;
+use mini_kvstore_v2::Config;
 use std::net::SocketAddr;
 
 #[tokio::main]

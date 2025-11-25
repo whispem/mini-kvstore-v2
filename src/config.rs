@@ -19,10 +19,8 @@ impl Config {
                 .unwrap_or_else(|_| "9002".to_string())
                 .parse()
                 .unwrap_or(9002),
-            volume_id: env::var("VOLUME_ID")
-                .unwrap_or_else(|_| "vol-1".to_string()),
-            data_dir: env::var("DATA_DIR")
-                .unwrap_or_else(|_| "data".to_string()),
+            volume_id: env::var("VOLUME_ID").unwrap_or_else(|_| "vol-1".to_string()),
+            data_dir: env::var("DATA_DIR").unwrap_or_else(|_| "data".to_string()),
             compaction_threshold: env::var("COMPACTION_THRESHOLD")
                 .unwrap_or_else(|_| "5".to_string())
                 .parse()
