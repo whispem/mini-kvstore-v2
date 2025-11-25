@@ -1,28 +1,33 @@
-// mini-kvstore-v2/src/volume/main.rs
 //! Volume binary entrypoint.
 
+use mini_kvstore_v2::Config;
 use mini_kvstore_v2::volume::server::start_volume_server;
 use std::net::SocketAddr;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let volume_id = std::env::var("VOLUME_ID").unwrap_or_else(|_| "vol-1".to_string());
-    let data_dir =
-        std::env::var("DATA_DIR").unwrap_or_else(|_| format!("volume_data_{}", volume_id));
+    let config = Config::from_env();
 
-    let port: u16 = std::env::var("PORT")
-        .unwrap_or_else(|_| "9002".to_string())
-        .parse()
-        .unwrap_or(9002);
-
-    let bind_addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let bind_addr = SocketAddr::from(([0, 0, 0, 0], config.port));
 
     println!("Starting volume server:");
-    println!("  volume_id = {}", volume_id);
-    println!("  data_dir  = {}", data_dir);
+    println!("  volume_id = {}", config.volume_id);
+    println!("  data_dir  = {}", config.data_dir);
     println!("  bind_addr = {}", bind_addr);
+    println!("  compaction_threshold = {}", config.compaction_threshold);
+    println!(
+        "  compaction_interval = {}s",
+        config.compaction_interval_secs
+    );
 
-    start_volume_server(bind_addr).await?;
+    start_volume_server(
+        bind_addr,
+        config.volume_id,
+        config.data_dir,
+        config.compaction_threshold,
+        config.compaction_interval_secs,
+    )
+    .await?;
 
     Ok(())
 }
