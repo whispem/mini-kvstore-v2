@@ -23,6 +23,10 @@ pub fn compact(store: &mut KVStore) -> Result<()> {
     }
 
     store.reset_active_segment()?;
+
+    // Save index snapshot after compaction
+    store.save_snapshot()?;
+
     Ok(())
 }
 
