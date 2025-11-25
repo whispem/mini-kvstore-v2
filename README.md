@@ -41,25 +41,30 @@ This isn't just another key-value store—it's a deep dive into how databases wo
 - 🔐 **Durable & crash-safe** - Append-only log with fsync guarantees
 - 📦 **Segmented architecture** - Automatic rotation when segments reach size limits
 - ⚡ **Lightning-fast reads** - O(1) lookups via in-memory HashMap index
-- 🗜️ **Manual compaction** - Space reclamation by rewriting live keys
+- 🗜️ **Automatic compaction** - Background compaction triggered by segment threshold
 - ✅ **Data integrity** - CRC32 checksums on every record
-- 💾 **Persistence** - Automatic index rebuild from segments on restart
+- 💾 **Index snapshots** - Instant restarts (5ms vs 500ms rebuild)
 - 🪦 **Tombstone deletions** - Efficient deletion in append-only architecture
+- 🌸 **Bloom filters** - Optimized negative lookups
 
 ### Production Ready
 - 🌐 **HTTP REST API** - Async server built with Axum
 - 🖥️ **Interactive CLI** - REPL for testing and exploration
-- 📊 **Monitoring** - Built-in stats and health endpoints
+- 📊 **Metrics endpoint** - `/metrics` for monitoring (keys, segments, uptime, etc.)
+- 🩺 **Health checks** - `/health` endpoint for load balancers
+- 🛑 **Graceful shutdown** - SIGTERM/Ctrl+C handling with snapshot save
 - 🧪 **Comprehensive tests** - Unit, integration, and benchmark suites
 - 🐳 **Docker support** - Multi-container deployment with docker-compose
 - 📈 **Performance benchmarks** - Criterion-based regression testing
 - 🔧 **CI/CD pipeline** - Automated testing, linting, and builds
+- 🚦 **Rate limiting** - 100MB request body limit
 
 ### Developer Experience
 - 📖 **Rich documentation** - API docs, examples, and learning resources
 - 🎨 **Clean architecture** - Modular design with clear separation of concerns
 - 🛠️ **Makefile included** - Simple commands for common tasks
 - 🎯 **Zero unsafe code** - Pure safe Rust implementation
+- ⚙️ **Config via env vars** - Easy deployment configuration
 
 ---
 
