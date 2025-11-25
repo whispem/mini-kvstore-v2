@@ -2,9 +2,12 @@
 
 **A production-ready, segmented key-value storage engine built in Rust**
 
-[![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://github.com/whispem/mini-kvstore-v2/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust Version](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://github.com/whispem/mini-kvstore-v2/actions)
+[![Production Ready](https://img.shields.io/badge/status-production_ready-success)](https://github.com/whispem/mini-kvstore-v2)
+[![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](https://github.com/whispem/mini-kvstore-v2/blob/main/Dockerfile)
+[![Performance](https://img.shields.io/badge/writes-240K_ops%2Fs-brightgreen)](https://github.com/whispem/mini-kvstore-v2#benchmarks)
+[![Performance](https://img.shields.io/badge/reads-11M_ops%2Fs-brightgreen)](https://github.com/whispem/mini-kvstore-v2#benchmarks)[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [Features](#-features) •
 [Quick Start](#-quick-start) •
