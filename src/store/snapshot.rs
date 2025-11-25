@@ -1,7 +1,7 @@
 //! Index snapshot persistence for faster restarts.
 
 use crate::store::error::{Result, StoreError};
-use crate::store::index::{Index, IndexEntry};
+use crate::store::index::Index;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::Path;
