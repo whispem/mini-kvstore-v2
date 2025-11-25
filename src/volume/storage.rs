@@ -53,4 +53,14 @@ impl BlobStorage {
     pub fn stats(&self) -> StoreStats {
         self.store.stats()
     }
+
+    /// Compact the underlying store
+    pub fn compact(&mut self) -> StoreResult<()> {
+        self.store.compact()
+    }
+
+    /// Save index snapshot
+    pub fn save_snapshot(&self) -> StoreResult<()> {
+        self.store.save_snapshot()
+    }
 }
