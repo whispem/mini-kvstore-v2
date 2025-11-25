@@ -3,7 +3,7 @@ name = "mini-kvstore-v2"
 version = "0.3.0"
 edition = "2021"
 authors = ["Em' <whispem@users.noreply.github.com>"]
-description = "A segmented append-only key-value store with checksums, compaction, and HTTP API"
+description = "A production-ready segmented key-value store with HTTP API, compaction, and snapshots"
 license = "MIT"
 repository = "https://github.com/whispem/mini-kvstore-v2"
 readme = "README.md"
@@ -20,13 +20,16 @@ crc32fast = "1.4"
 
 # HTTP server
 axum = "0.7"
-tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "sync", "macros", "fs"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "sync", "macros", "fs", "signal"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.5", features = ["limit"] }
 
 # CLI
 clap = { version = "4", features = ["derive"] }
+
+# Bloom filter + hashing
 bloomfilter = "3.0.1"
 sha2 = "0.10.9"
 
@@ -35,7 +38,6 @@ criterion = { version = "0.5", features = ["html_reports"] }
 tokio = { version = "1", features = ["full", "test-util"] }
 
 [features]
-# Feature for running heavy/resource-intensive tests
 heavy-tests = []
 
 [[bin]]
@@ -58,7 +60,3 @@ strip = true
 
 [profile.bench]
 inherits = "release"
-
-# Bloom filter + hashing (pour BloomIndex)
-bloomfilter = "1.0"
-sha2 = "0.10"
