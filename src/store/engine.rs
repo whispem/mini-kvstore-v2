@@ -3,6 +3,7 @@ use crate::store::bloom::BloomIndex;
 use crate::store::error::{Result, StoreError};
 use crate::store::index::Index;
 use crate::store::record::{self, OP_DEL, OP_SET};
+use crate::store::snapshot;
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufReader, BufWriter, Write};
@@ -49,11 +50,23 @@ impl KVStore {
         segment_paths.sort_by_key(|(id, _)| *id);
 
         let mut values = HashMap::new();
-        let mut index = Index::new();
         let mut bloom = BloomIndex::new(50_000);
 
+        // Try to load index from snapshot first
+        let mut index = Self::try_load_snapshot(&base_dir).unwrap_or_else(Index::new);
+        let snapshot_loaded = !index.is_empty();
+
+        // Replay segments
+        let replay_start = std::time::Instant::now();
         for (id, path) in &segment_paths {
             Self::replay_segment(path, *id, &mut values, &mut index, &mut bloom)?;
+        }
+
+        if !snapshot_loaded && !segment_paths.is_empty() {
+            println!(
+                "✓ Rebuilt index from segments in {:.2}s",
+                replay_start.elapsed().as_secs_f64()
+            );
         }
 
         let last_id = segment_paths.last().map(|(id, _)| *id).unwrap_or(0);
@@ -77,6 +90,26 @@ impl KVStore {
         })
     }
 
+    /// Try to load index from snapshot, fallback to empty if missing
+    fn try_load_snapshot(base_dir: &Path) -> Option<Index> {
+        let snapshot_path = base_dir.join("index.snapshot");
+        if snapshot_path.exists() {
+            match snapshot::load_snapshot(&snapshot_path) {
+                Ok(idx) => {
+                    println!("✓ Loaded index from snapshot ({} keys)", idx.len());
+                    return Some(idx);
+                }
+                Err(e) => {
+                    eprintln!(
+                        "⚠ Failed to load snapshot: {}, rebuilding from segments",
+                        e
+                    );
+                }
+            }
+        }
+        None
+    }
+
     fn replay_segment(
         path: &Path,
         seg_id: u64,
@@ -96,17 +129,17 @@ impl KVStore {
                             index.insert(key.clone(), seg_id, 0);
                             bloom.insert(&key);
                         }
-                    },
+                    }
                     OP_DEL => {
                         values.remove(&key);
                         index.remove(&key);
-                    },
+                    }
                     _ => {
                         return Err(StoreError::CorruptedData(format!(
                             "invalid opcode in {}",
                             path.display()
                         )));
-                    },
+                    }
                 },
                 None => break,
             }
@@ -164,8 +197,6 @@ impl KVStore {
             return Ok(None);
         }
 
-        // As a fallback we already replayed segments into `values` at open;
-        // scanning segments on demand would be implemented later if needed.
         Ok(None)
     }
 
@@ -215,6 +246,13 @@ impl KVStore {
             active_segment_id: self.active_segment_id as usize,
             oldest_segment_id: 0,
         }
+    }
+
+    /// Save index snapshot for faster restarts
+    pub fn save_snapshot(&self) -> Result<()> {
+        let snapshot_path = self.base_dir.join("index.snapshot");
+        snapshot::save_snapshot(&self.index, &snapshot_path)?;
+        Ok(())
     }
 
     pub fn compact(&mut self) -> Result<()> {
