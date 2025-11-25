@@ -1,7 +1,6 @@
 # Mini KV Store v2 🦀
 
-
-**A production-ready, segmented key-value store built in Rust**
+**A production-ready, segmented key-value storage engine built in Rust**
 
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://github.com/whispem/mini-kvstore-v2/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -9,28 +8,30 @@
 
 [Features](#-features) •
 [Quick Start](#-quick-start) •
-[API Documentation](#-api-reference) •
 [Architecture](#-architecture) •
+[API Documentation](#-api-documentation) •
 [Benchmarks](#-benchmarks) •
 [Contributing](#-contributing)
-
 
 ---
 
 ## 📚 About
 
-Mini KV Store v2 is a high-performance, append-only key-value storage engine with HTTP API capabilities. Built as an educational project to explore storage engine fundamentals, it implements core database concepts like segmented logs, write-ahead logging, compaction, and crash recovery.
+Mini KV Store v2 is a high-performance, append-only key-value storage engine with HTTP API capabilities. 
+Built as an educational project to explore storage engine fundamentals, it implements core database concepts like segmented logs, compaction, bloom filters, index snapshots, and crash recovery.
 
 > 💡 **New!** Read about my [3-week learning journey](JOURNEY.md) from Rust beginner to building a working storage engine.
 
 ### Why This Project?
 
-This isn't just another key-value store—it's a deep dive into how databases work under the hood. Every feature teaches fundamental concepts:
+This isn't just another key-value store—it's a deep dive into how databases work under the hood. 
+Every feature teaches fundamental concepts:
 
 - **Segmented logs** → Understanding write amplification and log-structured storage
 - **In-memory indexing** → Learning trade-offs between memory and disk I/O
 - **Compaction** → Exploring space reclamation strategies
-- **Checksums** → Implementing data integrity guarantees
+- **Bloom filters** → Optimizing negative lookups
+- **Index snapshots** → Fast restarts without full replay
 - **HTTP API** → Building async production services
 
 ---
@@ -41,7 +42,7 @@ This isn't just another key-value store—it's a deep dive into how databases wo
 - 🔐 **Durable & crash-safe** - Append-only log with fsync guarantees
 - 📦 **Segmented architecture** - Automatic rotation when segments reach size limits
 - ⚡ **Lightning-fast reads** - O(1) lookups via in-memory HashMap index
-- 🗜️ **Automatic compaction** - Background compaction triggered by segment threshold
+- 🗜️ **Background compaction** - Automatic space reclamation triggered by segment threshold
 - ✅ **Data integrity** - CRC32 checksums on every record
 - 💾 **Index snapshots** - Instant restarts (5ms vs 500ms rebuild)
 - 🪦 **Tombstone deletions** - Efficient deletion in append-only architecture
@@ -145,7 +146,7 @@ PORT=9000 VOLUME_ID=my-vol DATA_DIR=./data cargo run --release --bin volume-serv
 
 ---
 
-## 🌐 REST API Reference
+## 🌐 REST API Documentation
 
 ### Health Check
 
@@ -158,7 +159,27 @@ GET /health
   "volume_id": "vol-1",
   "keys": 42,
   "segments": 2,
-  "total_mb": 1.5
+  "total_mb": 1.5,
+  "uptime_secs": 3600
+}
+```
+
+### Metrics
+
+```bash
+GET /metrics
+
+# Response (200 OK)
+{
+  "total_keys": 1000,
+  "total_segments": 3,
+  "total_bytes": 1572864,
+  "total_mb": 1.5,
+  "active_segment_id": 3,
+  "oldest_segment_id": 0,
+  "volume_id": "vol-1",
+  "uptime_secs": 3600,
+  "avg_value_size_bytes": 1572.864
 }
 ```
 
@@ -254,15 +275,15 @@ GET /blobs
     │                │                │
     ▼                ▼                ▼
 ┌────────┐    ┌────────────┐    ┌──────────┐
-│ Index  │    │  Segment   │    │  Stats   │
-│HashMap │    │  Manager   │    │ Tracker  │
+│ Index  │    │  Segment   │    │  Bloom   │
+│HashMap │    │  Manager   │    │  Filter  │
 └────────┘    └──────┬─────┘    └──────────┘
                      │
          ┌───────────▼───────────┐
          │    Segment Files      │
          │ segment-0000.dat      │
          │ segment-0001.dat      │
-         │ segment-0002.dat      │
+         │ index.snapshot        │
          └───────────────────────┘
 ```
 
@@ -270,26 +291,29 @@ GET /blobs
 
 **Write Path:**
 1. Client calls `set(key, value)`
-2. KVStore appends operation to active segment
-3. Segment writes: `[op_code][key_len][key][val_len][value]`
-4. In-memory index updated: `key → (segment_id, offset, length)`
+2. Record written to active segment with format: `[MAGIC][OP][KEY_LEN][VAL_LEN][KEY][VALUE][CRC32]`
+3. In-memory index updated: `key → (segment_id, offset)`
+4. Bloom filter updated with key
 5. fsync() ensures durability
 
 **Read Path:**
 1. Client calls `get(key)`
-2. Index lookup: O(1) HashMap access
-3. Returns value directly from memory (rebuilt on startup)
+2. Check in-memory values cache - O(1) HashMap lookup
+3. If not in cache, bloom filter check (fast negative lookup)
+4. Index lookup for segment location
+5. Return value directly from memory
 
 **Delete Path:**
 1. Client calls `delete(key)`
-2. Tombstone appended to segment
-3. Key removed from in-memory index
+2. Tombstone (OP_DEL) appended to active segment
+3. Key removed from in-memory index and values cache
 
 **Compaction:**
-1. Collect all live keys from index
-2. Write to new segments
-3. Delete old segments
-4. Index remains unchanged (still valid)
+1. Background task monitors segment count
+2. When threshold exceeded, collect all live keys from index
+3. Write to fresh segments sequentially
+4. Atomically swap: delete old segments
+5. Save index snapshot for faster recovery
 
 ### On-Disk Format
 
@@ -299,22 +323,26 @@ Each segment file contains a sequence of records:
 ╔════════════════════════════════════════════╗
 ║              Segment Record                ║
 ╠════════════════════════════════════════════╣
-║  op_code    │ 1 byte  │ 0=SET, 1=DELETE   ║
+║  MAGIC      │ 2 bytes │ 0xF0 0xF1         ║
+║  op_code    │ 1 byte  │ 1=SET, 2=DELETE   ║
 ║  key_len    │ 4 bytes │ u32 little-endian ║
+║  val_len    │ 4 bytes │ u32 little-endian ║
 ║  key        │ N bytes │ UTF-8 string      ║
-║  [val_len]  │ 4 bytes │ Only if op=SET    ║
-║  [value]    │ M bytes │ Only if op=SET    ║
+║  value      │ M bytes │ Binary data       ║
+║  checksum   │ 4 bytes │ CRC32             ║
 ╚════════════════════════════════════════════╝
 ```
 
-**Example SET record:**
-```
-[0x00][0x04 0x00 0x00 0x00]['u''s''e''r'][0x05 0x00 0x00 0x00]['A''l''i''c''e']
-```
+**Index Snapshot Format:**
 
-**Example DELETE record:**
 ```
-[0x01][0x04 0x00 0x00 0x00]['u''s''e''r']
+╔════════════════════════════════════════════╗
+║           Index Snapshot File              ║
+╠════════════════════════════════════════════╣
+║  MAGIC      │ 8 bytes │ "KVINDEX1"        ║
+║  num_entries│ 8 bytes │ u64               ║
+║  entries[]  │ Variable│ Key→Location map  ║
+╚════════════════════════════════════════════╝
 ```
 
 ---
@@ -354,6 +382,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Manual compaction
     store.compact()?;
     
+    // Save index snapshot
+    store.save_snapshot()?;
+    
     Ok(())
 }
 ```
@@ -386,19 +417,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## 📊 Benchmarks
 
-Run the included benchmarks to measure performance on your hardware:
-
-```bash
-# Run all benchmarks
-cargo bench
-
-# Run specific benchmark
-cargo bench bench_set
-
-# Generate HTML reports
-cargo bench -- --verbose
-```
-
 ### Sample Results
 
 **Environment:** Apple M4, 16GB RAM, macOS 15
@@ -415,16 +433,19 @@ compact_1000_keys       time: [12.3 ms 12.5 ms 12.8 ms]
 
 **Throughput:**
 - **Writes:** ~240,000 ops/sec
-- **Reads:** ~11M ops/sec
+- **Reads:** ~11M ops/sec (in-memory cache)
 - **Compaction:** ~80,000 keys/sec
 
-### HTTP API Benchmark
+### Running Benchmarks
 
 ```bash
-# Run k6 benchmark (requires k6 installation)
+# Run Criterion benchmarks
+cargo bench
+
+# Run HTTP API benchmark (requires k6)
 ./run_benchmark.sh
 
-# Custom configuration
+# Custom k6 configuration
 ./run_benchmark.sh 1 8000 9000 32 60s 1048576
 ```
 
@@ -480,16 +501,14 @@ cargo test --release -- --nocapture
 # Run specific test
 cargo test --release test_compaction
 
-# Run heavy tests (long-running)
-cargo test --release --features heavy-tests
-
 # Run integration tests only
 cargo test --release --test store_integration
 ```
 
 **Test Coverage:**
-- Unit tests for core components
-- Integration tests for workflows
+- Unit tests for core components (bloom filters, snapshots, record I/O)
+- Integration tests for complete workflows
+- HTTP handler tests with tokio runtime
 - Example programs as executable tests
 - Benchmark suite for performance regression
 
@@ -502,18 +521,22 @@ mini-kvstore-v2/
 ├── src/
 │   ├── lib.rs                  # Public API exports
 │   ├── main.rs                 # CLI binary entrypoint
-│   ├── store/
+│   ├── config.rs               # Global configuration
+│   ├── store/                  # Storage engine
 │   │   ├── engine.rs           # Core KVStore implementation
 │   │   ├── compaction.rs       # Compaction logic
 │   │   ├── error.rs            # Error types
 │   │   ├── index.rs            # In-memory index
 │   │   ├── segment.rs          # Segment abstraction
+│   │   ├── record.rs           # Binary record format
+│   │   ├── snapshot.rs         # Index persistence
+│   │   ├── bloom.rs            # Bloom filter implementation
 │   │   ├── stats.rs            # Statistics tracking
-│   │   └── config.rs           # Configuration
-│   └── volume/
+│   │   └── config.rs           # Store configuration
+│   └── volume/                 # HTTP API layer
 │       ├── main.rs             # Volume server binary
 │       ├── server.rs           # Axum server setup
-│       ├── handlers.rs         # HTTP handlers
+│       ├── handlers.rs         # HTTP request handlers
 │       ├── storage.rs          # BlobStorage wrapper
 │       └── config.rs           # Volume configuration
 ├── tests/
@@ -561,14 +584,12 @@ make docker         # Build Docker image
 make docker-up      # Start cluster
 ```
 
-### Code Quality
+### Code Quality Standards
 
-The project maintains high code quality standards:
-
-- **Formatting:** `cargo fmt` with custom rules
+- **Formatting:** `cargo fmt` with project-specific rules
 - **Linting:** `cargo clippy` with strict settings
-- **Testing:** Comprehensive test suite
-- **CI:** Automated checks on every push
+- **Testing:** Comprehensive test suite with >80% coverage
+- **CI:** Automated checks on every push (format, lint, test, build)
 - **Documentation:** Inline docs for all public APIs
 
 ```bash
@@ -596,11 +617,9 @@ make pre-commit
 - [x] Comprehensive benchmarks
 - [x] Docker support
 - [x] CI/CD pipeline
-
-### In Progress 🚧
-- [ ] Background compaction (automatic)
-- [ ] Index snapshots for faster restarts
-- [ ] Bloom filters for negative lookups
+- [x] Bloom filters
+- [x] Index snapshots
+- [x] Background compaction
 
 ### Planned 📋
 - [ ] Range queries (requires sorted segments)
@@ -628,23 +647,28 @@ Append-only architectures offer several advantages:
 
 Trading memory for speed is worth it for most workloads:
 - **O(1) lookups** - No disk seeks
-- **Rebuild on startup** - Index is derived data
+- **Rebuild on startup** - Index is derived data (or load from snapshot)
 - **Simple implementation** - Standard HashMap
 
-### Why Manual Compaction?
+### Why Bloom Filters?
 
-Manual control teaches the fundamentals:
-- **Understand trade-offs** - Space vs. performance
-- **Predictable behavior** - No surprise pauses
-- **Learning tool** - See compaction effects clearly
+Bloom filters dramatically reduce unnecessary disk I/O:
+- **Fast negative lookups** - Definitively know when key doesn't exist
+- **Small memory footprint** - ~10 bits per key
+- **No false negatives** - Never miss a key that exists
 
-*Production systems would use background compaction.*
+### Why Index Snapshots?
+
+Snapshots eliminate the startup penalty:
+- **5ms load time** vs 500ms+ segment replay
+- **Graceful shutdown** - Save state before exit
+- **Production-ready** - Instant restarts for critical systems
 
 ### Why Rust?
 
 - **Memory safety** - No segfaults or data races
 - **Performance** - Zero-cost abstractions
-- **Ecosystem** - Excellent libraries (Axum, Tokio)
+- **Ecosystem** - Excellent libraries (Axum, Tokio, Criterion)
 - **Learning curve** - Forces good design decisions
 
 ---
@@ -705,6 +729,27 @@ git push origin feature/my-new-feature
 
 ---
 
+## 🌟 Community
+
+### Rust Aix-Marseille (RAM)
+
+Join our local Rust community for meetups, workshops, and collaboration:
+
+- 💬 **Discord:** [Rust Aix-Marseille](https://discord.gg/sXr9ZqBJ)
+- 💼 **LinkedIn:** [Rust Aix-Marseille](https://www.linkedin.com/company/rust-aix-marseille-ram/)
+- 📍 **Location:** Aix-Marseille area, France
+
+We organize regular events to learn, share, and build together!
+
+### Project Links
+
+- 🐙 **GitHub:** [mini-kvstore-v2](https://github.com/whispem/mini-kvstore-v2)
+- 📝 **Medium:** [Project article](https://medium.com/@whispem/from-literature-and-languages-to-low-level-systems-how-i-built-a-storage-engine-3-weeks-into-rust-6a5f5a4c3aa3)
+- 🔴 **Reddit:** [Build discussion](https://www.reddit.com/r/rust/comments/1p0foo8/3_weeks_into_rust_built_a_segmented_log_kv_store/)
+- 💼 **LinkedIn:** [@whispem posts](https://www.linkedin.com/in/whispem/)
+
+---
+
 ## 📜 License
 
 This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
@@ -718,14 +763,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED...
+copies of the Software...
 ```
 
 ---
@@ -754,18 +792,9 @@ From literature & languages background to building storage engines in 3 weeks. R
 
 - 🐛 **Issues:** [GitHub Issues](https://github.com/whispem/mini-kvstore-v2/issues)
 - 💬 **Discussions:** [GitHub Discussions](https://github.com/whispem/mini-kvstore-v2/discussions)
-- 📧 **Email:** whispem@users.noreply.github.com
+- 📧 **Email:** contact.whispem@gmail.com
 
 ---
-
-## 🌟 Star History
-
-If you find this project helpful, please consider giving it a star! ⭐
-
-It helps others discover the project and motivates continued development.
-
----
-
 
 **Built with ❤️ in Rust**
 
