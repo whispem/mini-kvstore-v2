@@ -749,7 +749,7 @@ We organize regular events to learn, share, and build together!
 - 🐙 **GitHub:** [mini-kvstore-v2](https://github.com/whispem/mini-kvstore-v2)
 - 📝 **Medium:** [Project article](https://medium.com/@whispem/from-literature-and-languages-to-low-level-systems-how-i-built-a-storage-engine-3-weeks-into-rust-6a5f5a4c3aa3)
 - 🔴 **Reddit:** [Build discussion](https://www.reddit.com/r/rust/comments/1p0foo8/3_weeks_into_rust_built_a_segmented_log_kv_store/)
-- 💼 **LinkedIn:** [@whispem posts](https://www.linkedin.com/in/whispem/)
+- 💼 **LinkedIn:** [Em's posts](https://www.linkedin.com/in/emilie-peretti/)
 
 ---
 
