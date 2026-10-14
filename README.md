@@ -1,78 +1,23 @@
-# Mini KV Store v2 🦀
+# mini-kvstore-v2
 
-**A production-ready, segmented key-value storage engine built in Rust**
+A log-structured key-value storage engine in Rust, with an interactive prompt and an HTTP server. Started on November 16, 2025, it was my first store with a real on-disk format: records with checksums, written to segment files, and replayed at startup.
 
-[![Rust Version](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
-[![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://github.com/whispem/mini-kvstore-v2/actions)
-[![Production Ready](https://img.shields.io/badge/status-production_ready-success)](https://github.com/whispem/mini-kvstore-v2)
-[![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](https://github.com/whispem/mini-kvstore-v2/blob/main/Dockerfile)
-[![Performance](https://img.shields.io/badge/writes-240K_ops%2Fs-brightgreen)](https://github.com/whispem/mini-kvstore-v2#benchmarks)
-[![Performance](https://img.shields.io/badge/reads-11M_ops%2Fs-brightgreen)](https://github.com/whispem/mini-kvstore-v2#benchmarks)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[JOURNEY.md](JOURNEY.md) tells how it was built, in the first weeks of my learning Rust.
 
-[Features](#-features) •
-[Quick Start](#-quick-start) •
-[Architecture](#-architecture) •
-[API Documentation](#-api-documentation) •
-[Benchmarks](#-benchmarks) •
-[Contributing](#-contributing)
+## Features
 
----
+- **Segments.** Records are appended to segment files (`segment-N.dat`); a new segment starts once the active one reaches 16 MB.
+- **Checksums.** Every record carries a CRC32 of its contents.
+- **Replay.** On startup, the store reads every segment in order to rebuild its in-memory index.
+- **Index snapshot.** The index is saved to `index.snapshot` (after compaction, and when the server shuts down) and loaded at startup.
+- **Bloom filter.** A Bloom filter of the written keys is kept next to the index.
+- **Compaction.** A `compact` command at the prompt; the HTTP server also compacts periodically when segments pile up.
+- **HTTP server.** A blob API built with Axum, with `/health` and `/metrics` endpoints and a 100 MB limit on request bodies.
+- **Tooling.** Criterion benchmarks, examples, a Dockerfile and a three-node `docker-compose.yml`, and a CI workflow (check, format, lint, tests).
 
-## 📚 About
+## Run it
 
-Mini KV Store v2 is a high-performance, append-only key-value storage engine with HTTP API capabilities.  
-Built as an educational project to explore storage engine fundamentals, it implements core database concepts like segmented logs, compaction, bloom filters, index snapshots, and crash recovery.
-
-> 💡 **New:** [3-week learning journey](JOURNEY.md) — from Rust & database newbie to working engine.
-
-**Why This Project?**  
-Not just another key-value store, but a deep dive into real DB internals:  
-- Segmented logs: write amplification, log-structured storage
-- In-memory indexing: speed/memory tradeoffs
-- Compaction: space reclamation, speed vs durability
-- Bloom filters: fast "not-found" lookups
-- Index snapshots: instant restarts
-- HTTP API: async & production-tested
-
----
-
-## ✨ Features
-
-**Core Engine**  
-- Durable, append-only log (fsync guarantees)
-- Automatic segmented architecture
-- Lightning-fast reads (O(1) in-memory HashMap index)
-- Background compaction (auto space reclaim)
-- CRC32 checksums for data integrity
-- Index snapshots (5ms restarts)
-- Tombstone deletions
-- Bloom filters (negative lookups)
-
-**Production Ready**  
-- HTTP REST API (Axum)
-- Interactive CLI (REPL)
-- `/metrics` and `/health` endpoints
-- Docker & docker-compose support
-- Criterion & k6 benchmarks
-- Full CI/CD (build, lint, test)
-- Rate limiting (100MB body max)
-- Unit/integration test suite
-
-**Developer Experience**  
-- Rich docs, many examples
-- Modular, clean codebase
-- Easy config via env vars
-- Makefile with all tasks
-- Pure safe Rust (no unsafe)
-
----
-
-## 🚀 Quick Start
-
-**Prerequisites:**  
-- Rust 1.75+ ([install](https://rustup.rs/))
-- Git
+Requires Rust 1.75 or later.
 
 ```bash
 git clone https://github.com/whispem/mini-kvstore-v2
@@ -81,173 +26,105 @@ cargo build --release
 cargo test --release
 ```
 
-**REPL CLI:**
+### The prompt
+
 ```bash
 cargo run --release
-# mini-kvstore-v2 (type help for instructions)
-# > set key "value"
-# > get key
-# > list
-# > compact
-# > quit
 ```
 
-**HTTP server:**
+The prompt stores its data in `./db`.
+
+```text
+mini-kvstore-v2 (type help for instructions)
+> set name Alice
+OK
+> get name
+Alice
+> list
+  name
+> delete name
+Deleted
+> get name
+Key not found
+```
+
+Commands: `set <key> <value>`, `get <key>`, `delete <key>`, `list`, `compact`, `stats`, `help`, `quit`.
+
+### The HTTP server
+
 ```bash
 cargo run --release --bin volume-server
-# (config: PORT, VOLUME_ID, DATA_DIR env vars)
 ```
 
----
+It is configured through environment variables:
 
-## 🌐 API Documentation
+| Variable | Default |
+| --- | --- |
+| `PORT` | `9002` |
+| `VOLUME_ID` | `vol-1` |
+| `DATA_DIR` | `data` |
+| `COMPACTION_THRESHOLD` | `5` (segments) |
+| `COMPACTION_INTERVAL_SECS` | `60` |
 
-- `/health`: health/status
-- `/metrics`: server stats
-- `POST /blobs/:key`: store blob
-- `GET /blobs/:key`: fetch blob
-- `DELETE /blobs/:key`: delete blob
-- `GET /blobs`: list all keys
+| Route | Effect |
+| --- | --- |
+| `POST /blobs/:key` | Stores the request body under the key. |
+| `GET /blobs/:key` | Returns the value. |
+| `DELETE /blobs/:key` | Deletes the key. |
+| `GET /blobs` | Lists the keys, as JSON. |
+| `GET /health` | Status, number of keys and segments. |
+| `GET /metrics` | Storage statistics, as JSON. |
 
-Example:
+```text
+$ curl -X POST localhost:9002/blobs/user:123 -d 'Hello, World!'
+{"key":"user:123","etag":"ec4ac3d0","size":13,"volume_id":"vol-1"}
+$ curl localhost:9002/blobs/user:123
+Hello, World!
+$ curl localhost:9002/blobs
+["user:123"]
+```
+
+### Docker
+
 ```bash
-curl -X POST http://localhost:8000/blobs/user:123 -d "Hello, World!"
-curl http://localhost:8000/blobs/user:123
-curl -X DELETE http://localhost:8000/blobs/user:123
+docker build -t mini-kvstore-v2 .
+docker run -d -p 8000:8000 -v "$(pwd)/data:/data" mini-kvstore-v2
 ```
 
----
+The image listens on port 8000. `docker-compose up -d` starts three independent volumes, on ports 8001 to 8003.
 
-## 🏗️ Architecture
+## Record format
 
+```text
+magic (2 bytes: F0 F1) | op (1 byte: 1 = set, 2 = delete) | key length (u32, LE) | value length (u32, LE) | key | value | CRC32 (u32, LE)
 ```
-[CLI / HTTP Client]
-        │
-    [Axum Server]
-        │
-   [Blob Storage]
-        │
-   [KVStore Core]
-      /  |  \
- [Index][Segments][Bloom]
-```
-- Append-only data segments on disk
-- HashMap and Bloom filter in RAM for O(1) queries
-- Snapshot/compaction for instant restart & small disk use
 
----
+The CRC32 covers the op, both lengths, the key and the value.
 
-## 📊 Benchmarks
+## Limits
 
-**Apple M4, 16GB RAM:**  
-- **Writes:** ~240,000 ops/sec
-- **Reads:** ~11M ops/sec (in-memory)
-- **Compaction:** ~80,000 keys/sec
+- All values are kept in memory as well as on disk, so the data set must fit in RAM.
+- Writes are flushed to the operating system, but not forced to disk with `fsync`.
+- A single node: the three volumes of `docker-compose.yml` do not replicate each other.
+- No authentication on the HTTP server.
 
-Run:
+## Benchmarks
+
 ```bash
 cargo bench
 ./run_benchmark.sh
 ```
 
----
+## Before and after
 
-## 🐳 Docker
+- [Tiny-Log-Structured-KV-Store](https://github.com/whispem/Tiny-Log-Structured-KV-Store), three days earlier: a single append-only log, without checksums.
+- [mini-kvstore-go](https://github.com/whispem/mini-kvstore-go): this engine translated into Go.
+- [minikv](https://github.com/whispem/minikv): the distributed version, with Raft and two-phase commit.
 
-**Standalone:**
-```bash
-docker build -t mini-kvstore-v2:latest .
-docker run -d -p 8000:8000 -v $(pwd)/data:/data --name kvstore mini-kvstore-v2:latest
-```
-**Cluster:**  
-```bash
-docker-compose up -d
-# nodes: localhost:8001 ... :8003
-docker-compose logs -f
-```
+## Community
 
----
+I'm part of [Rust Aix-Marseille](https://www.linkedin.com/company/rust-aix-marseille-ram/) ([Discord](https://discord.gg/sXr9ZqBJ)). Issues and discussions are welcome here; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## 🧪 Testing
+## License
 
-```bash
-cargo test --release
-cargo test --release --test store_integration
-make pre-commit    # fmt, clippy, test
-```
-- Extensive unit/integration + HTTP
-- >80% coverage (goal)
-- Benchmarks: Criterion + k6
-
----
-
-## 📂 Project Structure
-
-[Click to expand](#)
-
----
-
-## 🗺️ Roadmap
-
-- [x] Append-only log, crash recovery, compaction
-- [x] Bloom filters, index snapshot
-- [x] REPL, HTTP, Docker, CI/CD, metrics
-- [ ] Range queries, WAL, compression
-- [ ] Replication, LSM, Prometheus, Admin UI
-
----
-
-## 🤔 Design Decisions
-
-- Append-only: max I/O, easy recovery
-- In-memory index: trade memory for O(1)
-- Bloom filter: instant "not found"
-- Rust: safety, perf, reliability
-
----
-
-## 📚 Learning Resources
-
-- [Database Internals](https://www.databass.dev/)
-- [DDIA](https://dataintensive.net/)
-- [sled](https://github.com/spacejam/sled)
-- [Bitcask Paper](https://riak.com/assets/bitcask-intro.pdf)
-
----
-
-## 🤝 Contributing
-
-- 🐛 Report bugs
-- 💡 Suggest features
-- 🧪 Add tests
-- 📖 Improve docs
-- ⚡ Performance PRs
-- [How to contribute](CONTRIBUTING.md)
-
----
-
-## 🌍 Community
-
-- Discord: [Rust Aix-Marseille](https://discord.gg/sXr9ZqBJ)
-- LinkedIn: [Rust Aix-Marseille](https://www.linkedin.com/company/rust-aix-marseille-ram/)
-- GitHub Discussions, Issues
-
----
-
-## 📜 License
-
-MIT — see [LICENSE](LICENSE)
-
----
-
-## 👤 Author
-
-**Em' ([@whispem](https://github.com/whispem))**
-
-From languages to Rust/DB internals in 3 weeks. See [JOURNEY.md](JOURNEY.md).
-
-> "The best way to learn is to build."
-
----
-
-**Built with ❤️ in Rust** • [Back to Top](#mini-kv-store-v2-)
+MIT. See [LICENSE](LICENSE).
